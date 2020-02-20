@@ -1,5 +1,3 @@
-#EE459—Project 11
-
 DEVICE     = atmega328p
 CLOCK      = 7372800
 PROGRAMMER = -c usbtiny -P usb
