@@ -58,7 +58,7 @@ void lcd_stringout_P(char *);
   instead of in RAM.
 */
 #ifdef NIBBLE_HIGH
-const unsigned char str1[] PROGMEM = ">> at328-5.c hi <<901234";
+const unsigned char str1[] PROGMEM = "Countdown: ";
 #else
 const unsigned char str1[] PROGMEM = ">> at328-5.c lo <<901234";
 #endif
@@ -67,7 +67,8 @@ const unsigned char str2[] PROGMEM = ">> USC EE459L <<78901234";
 #define LCD_RS          (1 << PB0)
 #define LCD_RW          (1 << PB3) //tied to ground
 #define LCD_E           (1 << PB1)
-#define LCD_Bits        (LCD_RS|LCD_RW|LCD_E)
+#define LCD_Bits        (LCD_RS| LCD_RW | LCD_E)
+#define CLEAR          0x10       //8-bit value for clear command
 
 #ifdef NIBBLE_HIGH
 #define LCD_Data_D     0xf0     // Bits in Port D for LCD data
@@ -81,12 +82,20 @@ const unsigned char str2[] PROGMEM = ">> USC EE459L <<78901234";
 int main(void) {
 
     lcd_init();                 // Initialize the LCD display
-
+    lcd_writecommand(0x01);
     lcd_moveto(0, 0);
     lcd_stringout_P((char *)str1);      // Print string on line 1
+    unsigned char i = '9';
+    while ( i != '0')
+    {
+      lcd_moveto(1,0);
+      lcd_writedata(i);
+      _delay_ms(1000);
+      i--;
+    }
 
-    lcd_moveto(1, 0);
-    lcd_stringout_P((char *)str2);      // Print string on line 2
+    // lcd_moveto(1, 0);
+    // lcd_stringout_P((char *)str2);      // Print string on line 2
 
     while (1) {                 // Loop forever
     }
