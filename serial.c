@@ -1,0 +1,50 @@
+/*
+serial_init - Initialize the USART port
+*/
+
+
+#include <avr/io.h>
+
+void serial_init(unsigned short ubrr) {
+
+	UBRR0 = ubrr;				// Set baud rate
+	UCSR0B |= (1 << TXEN0);		// Turn on transmitter
+	UCSR0B |= (1 << RXEN0);		// Turn on receiver
+	UCSR0C = (3 << UCSZ00);		// Set for async. operation, no parity, 
+								// one stop bit, 8 data bits
+} 
+/*
+serial_out — Output a byte to the USART0 Port
+*/
+
+void serial_out(char ch) {
+	while ((UCSR0A & (1 << UDRE0)) == 0 );
+	UDR0 = ch; 
+}
+
+/*
+serial_in - Read a byte from the USART0 and return it
+*/
+
+char serial_in() {
+	while ( !(UCSR0A & (1 << RXC0)) );
+	return UDR0;
+
+}
+
+int main(void)
+{
+	unsigned short baud_rate = 47;
+	serial_init(baud_rate);
+	char input;
+
+	while(1)
+	{
+		serial_out('a');
+		input = serial_in();
+		printf("%c\n", input);
+	}
+
+	return 0;
+}
+
