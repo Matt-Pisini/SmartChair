@@ -101,7 +101,6 @@ int main(void)
 		
 		// input = serial_in();
 		// printf("%c\n", input);
-		//I ADDED THIS FOR A TEST
 	}
 
 	return 0;
