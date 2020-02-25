@@ -23,9 +23,9 @@ const unsigned char str1[] PROGMEM = ">> at328-5.c lo <<901234";
 #endif
 const unsigned char str2[] PROGMEM = ">> USC EE459L <<78901234";
 
-#define LCD_RS          (1 << PB1)
+#define LCD_RS          (1 << PB0)
 #define LCD_RW          (1 << PB3)
-#define LCD_E           (1 << PB0)
+#define LCD_E           (1 << PB1)
 #define LCD_Bits        (LCD_RS|LCD_RW|LCD_E)
 
 #ifdef NIBBLE_HIGH
