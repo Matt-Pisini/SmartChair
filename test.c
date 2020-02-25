@@ -2,50 +2,12 @@
 #include <avr/interrupt.h>
 #include <stdio.h>
 #include <string.h>
+#include "serial.h"
 
 /*
 serial_init - Initialize the USART port
 */
-
-void serial_init(unsigned short ubrr) {
-
-	UBRR0 = ubrr;				// Set baud rate
-	UCSR0B |= (1 << TXEN0);		// Turn on transmitter
-	UCSR0B |= (1 << RXEN0);		// Turn on receiver
-	UCSR0C = (3 << UCSZ00);		// Set for async. operation, no parity, 
-								// one stop bit, 8 data bits
-} 
-
-void string_out(char* input)
-{
-	unsigned int index = 0;
-	while(input[index] != '\0')
-	{
-		// input[index] = input[index];
-		serial_out(input[index]);
-		index++;
-	}
-}
-
-/*
-serial_out — Output a byte to the USART0 Port
-*/
-void serial_out(char ch) {
-	while ((UCSR0A & (1 << UDRE0)) == 0 );
-
-	UDR0 = ch; 
-}
-
-/*
-serial_in - Read a byte from the USART0 and return it
-*/
-
-char serial_in() {
-	while ( !(UCSR0A & (1 << RXC0)) );
-	return UDR0;
-
-}
-
+volatile uint8_t flag;
 
 void timer_init()
 {
@@ -54,7 +16,7 @@ void timer_init()
     TCNT1 |= (1 << WGM01);
 
     // Set the value that you want to count to
-    OCR0A = 0x10;
+    OCR0A = 0x7F;
 
     TIMSK0 |= (1 << OCIE0A);    //Set the ISR COMPA vect
 
@@ -82,10 +44,8 @@ unsigned int TIM16_read( void )
 
 int main(void)
 {
-	unsigned short baud_rate = 47;
-	serial_init(baud_rate);
 	timer_init();
-	unsigned int timer, old_timer;
+	unsigned int timer;
 	char buffer_input[10];
 	char flag = 0;
 
@@ -110,6 +70,13 @@ int main(void)
 
 ISR (TIMER0_COMPA_vect)  // timer0 overflow interrupt
 {
-    flag = 1;//event to be exicuted every 4ms here
+    if (flag == 1)		//event to be exicuted every 4ms here
+    {
+    	flag = 0;
+    }			
+    else
+    {
+    	flag = 1;
+    }
 }
 

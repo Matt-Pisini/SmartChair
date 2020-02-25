@@ -5,6 +5,9 @@ serial_init - Initialize the USART port
 
 #include <avr/io.h>
 
+#define BAUD_RATE 47
+
+
 void serial_init(unsigned short ubrr) {
 
 	UBRR0 = ubrr;				// Set baud rate
@@ -34,7 +37,7 @@ char serial_in() {
 
 int main(void)
 {
-	unsigned short baud_rate = 47;
+	unsigned short baud_rate = BAUD_RATE;
 	serial_init(baud_rate);
 	char input;
 

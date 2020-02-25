@@ -33,6 +33,10 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/pgmspace.h>
+#include <avr/interrupt.h>
+#include <stdio.h>
+#include <string.h>
+
 
 /*
   The NIBBLE_HIGH condition determines which PORT bits are used to
@@ -79,27 +83,92 @@ const unsigned char str2[] PROGMEM = ">> USC EE459L <<78901234";
 #define LCD_Status     (1 << PD7) // Bit in Port D for LCD busy status
 #endif
 
+
+/*******************************TIMER STUFF*******************************/
+
+volatile uint8_t flag;
+
+void timer_init()
+{
+
+      // Set the Timer Mode to CTC
+    TCNT1 |= (1 << WGM01);
+
+    // Set the value that you want to count to
+    OCR0A = 0x7F;
+
+    TIMSK0 |= (1 << OCIE0A);    //Set the ISR COMPA vect
+
+    sei();         //enable interrupts
+
+
+    TCCR0B |= (1 << CS02);
+    // set prescaler to 256 and start the timer
+
+}
+
+unsigned int TIM16_read( void )
+{
+  unsigned char sreg;
+  unsigned int i;
+
+  sreg = SREG;      //save global interrupt flag
+  cli();          //disable interrupts
+  i = TCNT1;
+
+  SREG = sreg;      //restore global interrupt flag
+  return i;
+
+}
+
+ISR (TIMER0_COMPA_vect)  // timer0 overflow interrupt service routine
+{
+    if (flag == 1)    //event to be exicuted every 4ms here
+    {
+      flag = 0;
+    }     
+    else
+    {
+      flag = 1;
+    }
+}
+
+/************************************************************/
+
+
 int main(void) {
 
     lcd_init();                 // Initialize the LCD display
     lcd_writecommand(0x01);
     lcd_moveto(0, 0);
-    lcd_stringout_P((char *)str1);      // Print string on line 1
-    unsigned char i = '9';
-    while ( i != '0')
-    {
-      lcd_moveto(1,0);
-      lcd_writedata(i);
-      _delay_ms(1000);
-      i--;
-    }
+    // lcd_stringout_P((char *)str1);      // Print string on line 1
+    timer_init();
+    unsigned int timer;
+    char buffer_input[10];
+
+
+
+    // unsigned char i = '9';
+    // while ( i != '0')
+    // {
+    //   lcd_moveto(1,0);
+    //   lcd_writedata(i);
+    //   _delay_ms(1000);
+    //   i--;
+    // }
 
     // lcd_moveto(1, 0);
     // lcd_stringout_P((char *)str2);      // Print string on line 2
 
     while (1) {                 // Loop forever
     }
-
+      if (flag)
+    {
+      timer = TIM16_read();
+      memcpy(buffer_input, (char*)&timer, sizeof(int));
+      // serial_out('a');
+      lcd_stringout(buffer_input);
+    }
     return 0;   /* never reached */
 }
 

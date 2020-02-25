@@ -22,7 +22,7 @@ unsigned int TIM16_read( void )
 	_CLI();					//disable interrupts
 	i = TCNT1;
 
-	SREG = sreg;
+	SREG = sreg;			//restore global interrupt flag
 	return i;
-	
+
 }
