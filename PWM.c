@@ -1,23 +1,26 @@
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include "PWM.h"
+#include "LCD.h"
+
 /********************************************* TIMER CODE FOR PWM ****************************************************************/
 
 void timer_init()
 {
-    ICR1 = 576;                             //counter counts to this value for 20ms period of PWM
+    ICR1 = 575;                             //counter counts to this value for 20ms period of PWM
+    TCNT1 = 0;                              //initialize counter value to 0
+    OCR1A = 48;                             //CONT. MOTION SERVO CONTROL (based off ICR1 = 576):
+                                            //No Motion           = 1.5ms HIGH --> OCR1A = 42
+                                            //Full anticlockwise  = 1.3ms HIGH --> OCR1A = 37
+                                            //Full clockwise      = 1.7ms HIGH --> OCR1A = 48
 
-    OCR1A = 43;                             //CONT. MOTION SERVO CONTROL (based off ICR1 = 576):
-                                            //No Motion           = 1.5ms HIGH --> OCR1A = 43
-                                            //Full anticlockwise  = 1.7ms HIGH --> OCR1A = 37
-                                            //Full clockwise      = 1.3ms HIGH --> OCR1A = 43
-
-    TCCR1A |= (1 << COM1A1);                //none-inverted mode (HIGH at bottom, LOW on Match)
+    TIMSK1 |= (1 << TOIE1) | (1 << OCIE1A); //enable overflow interrupt & CompareA interrupt
 
     TCCR1A |= (1 << WGM11);                 //sets to fast PWM mode using ICR1 as register to count to
     TCCR1B |= (1 << WGM12) | (1 << WGM13);
 
     TCCR1B |= (1 << CS12);                  //sets prescaler to 256 and starts timer
-
+    PORTB |= (1 << SERVO_PORT);
     sei();                                  //enable global interrupt flag register
 
 }
@@ -53,8 +56,15 @@ void init_servo()
 ISR (TIMER1_COMPA_vect)  // timer1 overflow interrupt service routine
 {
   
-  timer_flag =  1;
-  lcd_stringout("interrupt");
+  PORTB ^= (1 << SERVO_PORT);
 
 }
+
+ISR (TIMER1_OVF_vect)  // timer1 overflow interrupt service routine
+{
+
+  PORTB ^= (1 << SERVO_PORT);
+
+}
+
 /********************************************************************************************************************************/

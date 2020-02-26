@@ -17,9 +17,7 @@ Purpose:		Code controlling all SmartChair functionality
 #include "PWM.h"
 #include "LCD.h"
 
-volatile uint8_t flag;
-
-int int main( void )
+int main( void )
 {
     lcd_init();                 // Initialize the LCD display
     lcd_writecommand(0x01);
@@ -27,21 +25,15 @@ int int main( void )
 
     lcd_stringout("Starting");
     lcd_moveto(1,0);
-    while (1) {   }              // Loop forever
+    timer_init();
+    init_servo();
+    lcd_stringout("Initialized");
+
+    while (1)  // Loop forever
+    {   
+    	
+    }             
 
 	return 0;
 }
 
-ISR (TIMER1_COMPA_vect)  // timer0 overflow interrupt service routine
-{
-  flag =  1;
-  lcd_stringout("interrupt");
-    // if (flag == 1)    //event to be exicuted every 4ms here
-    // {
-    //   flag = 0;
-    // }     
-    // else
-    // {
-    //   flag = 1;
-    // }
-}
