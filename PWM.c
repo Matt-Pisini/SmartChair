@@ -1,18 +1,18 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "PWM.h"
-#include "LCD.h"
 
 /********************************************* TIMER CODE FOR PWM ****************************************************************/
 
 void timer_init()
 {
-    ICR1 = 575;                             //counter counts to this value for 20ms period of PWM
     TCNT1 = 0;                              //initialize counter value to 0
-    OCR1A = 48;                             //CONT. MOTION SERVO CONTROL (based off ICR1 = 576):
+    OCR1A = 42;                             //CONT. MOTION SERVO CONTROL (based off ICR1 = 576):
                                             //No Motion           = 1.5ms HIGH --> OCR1A = 42
                                             //Full anticlockwise  = 1.3ms HIGH --> OCR1A = 37
                                             //Full clockwise      = 1.7ms HIGH --> OCR1A = 48
+    ICR1 = 575 + OCR1A;                     //575 = 20ms, counter counts for 20ms after reaching PWM count
+
 
     TIMSK1 |= (1 << TOIE1) | (1 << OCIE1A); //enable overflow interrupt & CompareA interrupt
 
