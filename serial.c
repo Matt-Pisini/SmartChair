@@ -1,12 +1,8 @@
 /*
 serial_init - Initialize the USART port
 */
-
-
 #include <avr/io.h>
-
-#define BAUD_RATE 47
-
+#include "serial.h"
 
 void serial_init(unsigned short ubrr) {
 
@@ -20,7 +16,7 @@ void serial_init(unsigned short ubrr) {
 serial_out — Output a byte to the USART0 Port
 */
 
-void serial_out(char ch) {
+void serial_out_byte(char ch) {
 	while ((UCSR0A & (1 << UDRE0)) == 0 );
 	UDR0 = ch; 
 }
@@ -35,19 +31,12 @@ char serial_in() {
 
 }
 
-int main(void)
+void serial_out_string(char* output)
 {
-	unsigned short baud_rate = BAUD_RATE;
-	serial_init(baud_rate);
-	char input;
-
-	while(1)
+	int index = 0;
+	while(output[index] != '\0')
 	{
-		serial_out('a');
-		input = serial_in();
-		printf("%c\n", input);
+		serial_out_byte(output[index]);
+		index++;
 	}
-
-	return 0;
 }
-

@@ -16,6 +16,12 @@ Purpose:		Code controlling all SmartChair functionality
 #include <string.h> 
 #include "PWM.h"
 #include "LCD.h"
+#include "serial.h"
+
+/****************************DEFINITIONS***************************/
+
+#define BAUD_RATE 47
+
 
 int main( void )
 {
@@ -31,7 +37,7 @@ int main( void )
 
     while (1)  // Loop forever
     {   
-    	
+
     }             
 
 	return 0;
