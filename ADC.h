@@ -2,7 +2,7 @@
 
 /**************************** GLOBAL VARIABLES ***************************/
 
-extern volatile uint8_t ADC_FLAG; 
+extern volatile uint8_t ADC_COMPLETE_FLAG; 
 
 /**************************** FUNCTIONS ***************************/
 

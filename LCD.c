@@ -104,7 +104,7 @@ void lcd_stringout(char *str)
 {
     char ch;
     while ((ch = *str++) != '\0')
-  lcd_writedata(ch);
+    lcd_writedata(ch);
 }
 
 /*
