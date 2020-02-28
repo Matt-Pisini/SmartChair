@@ -1,13 +1,12 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "ADC.h"
-#include "LCD.h"
 
 // volatile uint8_t ADC_FLAG;
 
 void ADC_init()
 {
-
+	ADCSRA |= (1 << ADEN);						//enables ADC module
 	ADMUX |= (1 << ADLAR);						//left adjust for 8 bit results
 	ADMUX |= (1 << REFS0);						//AVCC for high voltage selection
 
@@ -22,8 +21,7 @@ void ADC_init()
 void ADC_conversion(char ADC_MUX)
 {
 	ADMUX &= 0xF0;						//clears MUX bits
-	ADMUX |= ADC_MUX;						//assigns select bits for correct ADC module
-	ADCSRA |= (1 << ADEN);				//enables ADC module
+	ADMUX |= ADC_MUX;					//assigns select bits for correct ADC module
 	ADCSRA |= (1 << ADSC);				//initiates one conversion
 
 }
@@ -31,8 +29,9 @@ void ADC_conversion(char ADC_MUX)
 //interrupt service routine
 ISR (ADC_vect)
 {
-
+	
 	ADC_FLAG = 1;								//set ADC flag when conversion complete
-	ADCSRA &= ~(1 << ADEN); 					//disable ADC
+	//double check
+	// ADCSRA &= ~(1 << ADEN); 					//disable ADC
 
 }
