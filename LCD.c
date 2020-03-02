@@ -11,13 +11,6 @@ Source: "at328-5.c - Demonstrate interface to a parallel LCD display"
 
 #define NIBBLE_HIGH                 // Use bits 4-7 for talking to LCD
 
-#ifdef NIBBLE_HIGH
-const unsigned char str1[] PROGMEM = ">> at328-5.c hi <<901234";
-#else
-const unsigned char str1[] PROGMEM = ">> at328-5.c lo <<901234";
-#endif
-const unsigned char str2[] PROGMEM = ">> USC EE459L <<78901234";
-
 #define LCD_RS          (1 << PB0)
 #define LCD_RW          0//(1 << PB3)
 #define LCD_E           (1 << PB1)
@@ -31,7 +24,6 @@ const unsigned char str2[] PROGMEM = ">> USC EE459L <<78901234";
 #define LCD_Data_D     0x0c     // Bits in Port D for LCD data
 #define LCD_Status     (1 << PD7) // Bit in Port D for LCD busy status
 #endif
-
 
 
 /*

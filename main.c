@@ -34,10 +34,24 @@ Purpose:		Code controlling all SmartChair functionality
 
 
 //function definitions
+void update_ADC(char *buf_right, char *buf_left);
+void display_ADC_LCD(char *buf_right, char *buf_left);
 
 
 //definitions from header file variables
 volatile uint8_t ADC_COMPLETE_FLAG = 0;
+
+//Global definitions
+uint8_t new_adc_val_left, new_adc_val_right;            //stores new ADC value from ADCH register
+uint8_t old_adc_val_left, old_adc_val_right;            //stores old ADC value from ADCH register
+
+
+            /********************************* LCD STRINGS (FLASH MEM.) ********************************/
+
+                const unsigned char str1[] PROGMEM = "Very nice";
+
+            /********************************************************************************************/
+
 
 /**************************************************************************************************************************/
 
@@ -58,10 +72,7 @@ int main( void )
    
     /*********************************** DECLARATIONS *********************************/
 
-    uint8_t old_adc_val_left, old_adc_val_right;            //stores old ADC value from ADCH register
-    uint8_t new_adc_val_left, new_adc_val_right;            //stores new ADC value from ADCH register
     char buffer_left[4], buffer_right[4];                   //buffer used to convert adc_val to string for print
-    uint8_t n;                                              //stores number of last element in buffer
     char ADC_LCD_DISPLAY;                                   //flag for whether to display ADC values on LCD
 
 
@@ -69,10 +80,6 @@ int main( void )
 
     /*********************************** DEFINITIONS *********************************/
 
-    old_adc_val_left = 0;
-    old_adc_val_right = 0;
-    new_adc_val_left = 0;
-    new_adc_val_right = 0;
     ADC_LCD_DISPLAY = 1;
 
     /*********************************************************************************/
@@ -80,77 +87,29 @@ int main( void )
     lcd_writecommand(1);
     lcd_moveto(0, 0);
 
-    lcd_stringout("Starting");
+    lcd_stringout("Starting: ");
+    // lcd_stringout_P((char *) str1);
     lcd_moveto(1,0);
     _delay_ms(1000);
 
 
-    while (1)  // Loop forever
+    while (1)  // Infinite loop
     {
+        orient_servo(new_adc_val_left, new_adc_val_right);              //Orient servo
 
+/************************************ ADC UPDATE & DISPLAY *************************************/
 
-/************************************ ADC calculations *************************************/
-
-        orient_servo(new_adc_val_left, new_adc_val_right);              //Correct servo orientation
 
         if(ADC_COMPLETE_FLAG)                                           //check if ADC complete
         {
-
             ADC_COMPLETE_FLAG = 0;                                      //turn ADC flag off
-
-            if ((ADMUX & 0x0F) == RIGHT_LDR)                            //check if RIGHT_LDR mux value
-            {
-
-                new_adc_val_right = ADC_VALUE;                          //read in new ADC value for RIGHT_LDR
-                ADMUX &= 0xF0;                                          //clears MUX bits for ADC
-                ADMUX |= LEFT_LDR;                                      //assigns select bits for next ADC measurement (LEFT_LDR)
-                buffer_right[0] = '\0';
-                n = sprintf(buffer_right, "%u", new_adc_val_right);     //convert byte into string of int value
-                buffer_right[n] = '\0';                                 //append null terminator
-
-            }
-            else                                                        //else LEFT_LDR mux value
-            {
-
-                new_adc_val_left = ADC_VALUE;                           //read in new ADC value for LEFT_LDR
-                ADMUX &= 0xF0;                                          //clears MUX bits for ADC
-                ADMUX |= RIGHT_LDR;                                     //assigns select bits for next ADC measurement (RIGHT_LDR)
-                buffer_left[0] = '\0';                                  //clear buffers
-                n = sprintf(buffer_left, "%u", new_adc_val_left);       //convert byte into string of int value
-                buffer_left[n] = '\0';                                  //append null terminator
-            
-            }
-
-            if (ADC_LCD_DISPLAY)                                        //ADC_LCD_DISPLAY = 1 if ADC values need to be displayed on LCD
-            {
-                if (new_adc_val_right != old_adc_val_right) 
-                {
-                    lcd_writecommand(1);
-                    lcd_moveto(0, 0);
-                    lcd_stringout("RIGHT_LDR: ");
-                    lcd_stringout(buffer_right);
-                    lcd_moveto(1, 0);
-                    lcd_stringout("LEFT_LDR: ");
-                    lcd_stringout(buffer_left);
-                    old_adc_val_right = new_adc_val_right;              //update value for comparison
-
-                }
-                if (new_adc_val_left != old_adc_val_left)
-                {
-                    lcd_writecommand(1);
-                    lcd_moveto(0, 0);
-                    lcd_stringout("RIGHT_LDR: ");
-                    lcd_stringout(buffer_right);
-                    lcd_moveto(1, 0);
-                    lcd_stringout("LEFT_LDR: ");
-                    lcd_stringout(buffer_left);
-                    old_adc_val_left = new_adc_val_left;                //update value for comparison
-
-                }
-            }
-
-        }        
-
+            update_ADC(buffer_right, buffer_left);
+        }
+        if (ADC_LCD_DISPLAY)                                        //ADC_LCD_DISPLAY = 1 if ADC values need to be displayed on LCD
+        {
+            display_ADC_LCD(buffer_right, buffer_left);
+        }
+               
 /**********************************************************************************************/
         
 
@@ -162,6 +121,56 @@ int main( void )
 
 /******************************************** FUNCTIONS *********************************************/
 
+void display_ADC_LCD(char *buf_right, char *buf_left)           //displays ADC values to LCD
+{
+    if (new_adc_val_right != old_adc_val_right) 
+    {
+        lcd_writecommand(1);
+        lcd_moveto(0, 0);
+        lcd_stringout("RIGHT_LDR: ");
+        lcd_stringout(buf_right);
+        lcd_moveto(1, 0);
+        lcd_stringout("LEFT_LDR: ");
+        lcd_stringout(buf_left);
+        old_adc_val_right = new_adc_val_right;                  //update value for comparison
+    }
+    if (new_adc_val_left != old_adc_val_left)
+    {
+        lcd_writecommand(1);
+        lcd_moveto(0, 0);
+        lcd_stringout("RIGHT_LDR: ");
+        lcd_stringout(buf_right);
+        lcd_moveto(1, 0);
+        lcd_stringout("LEFT_LDR: ");
+        lcd_stringout(buf_left);
+        old_adc_val_left = new_adc_val_left;                    //update value for comparison
+    }
 
+}
+
+
+void update_ADC(char *buf_right, char *buf_left)                //updates ADC value when ready
+{
+    uint8_t n;
+
+    if ((ADMUX & 0x0F) == RIGHT_LDR)                            //check if RIGHT_LDR mux value
+    {
+        new_adc_val_right = ADC_VALUE;
+        ADMUX &= 0xF0;                                          //clears MUX bits for ADC        
+        ADMUX |= LEFT_LDR;                                      //assigns select bits for next ADC measurement (LEFT_LDR)
+        buf_right[0] = '\0';                                    //clear buffers
+        n = sprintf(buf_right, "%u", new_adc_val_right);        //convert byte into string of int value
+        buf_right[n] = '\0'; 
+    }
+    else
+    {
+        new_adc_val_left = ADC_VALUE;
+        ADMUX &= 0xF0;                                          //clears MUX bits for ADC
+        ADMUX |= RIGHT_LDR;                                     //assigns select bits for next ADC measurement (RIGHT_LDR)  
+        buf_left[0] = '\0';                                     //clear buffers
+        n = sprintf(buf_left, "%u", new_adc_val_left);          //convert byte into string of int value
+        buf_left[n] = '\0';           
+    }
+}
 
 /****************************************************************************************************/

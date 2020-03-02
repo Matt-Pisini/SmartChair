@@ -10,5 +10,9 @@ void lcd_writenibble(unsigned char);
 void lcd_wait(void);
 void lcd_stringout_P(char *);
 
+/******************************************* LCD STRINGS *******************************************/
+
+/****************************************************************************************************/
+
 #define LCD_CONTROL
 #endif
