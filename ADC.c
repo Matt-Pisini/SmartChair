@@ -14,13 +14,13 @@ void ADC_init()
 	
 	ADCSRA |= (1 << ADATE);						//sets autotrigger (controlled in ADCSRB)
 	ADCSRB |= (1 << ADTS2);						//timer/counter0 overflow interrupt trigger
-	ADMUX |= 0x02;
+	ADMUX |= 0x02;								//start mux on PC2 (ADC2)
 
 }
 
 void ADC_conversion(char ADC_MUX)
 {
-	ADMUX &= 0xF0;						//clears MUX bits
+	ADMUX &= 0xF0;						//clears MUX[3:0] bits
 	ADMUX |= ADC_MUX;					//assigns select bits for correct ADC module
 	ADCSRA |= (1 << ADSC);				//initiates one conversion
 

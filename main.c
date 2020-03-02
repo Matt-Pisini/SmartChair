@@ -19,25 +19,28 @@ Purpose:		Code controlling all SmartChair functionality
 #include "serial.h"
 #include "ADC.h"
 
-/****************************DEFINITIONS***************************/
+/******************************************************* DEFINITIONS ******************************************************/
 
-#define BAUD_RATE ((unsigned short) 47)
-#define PWM_COUNTER OCR1A                   //increase/decrease to move servo
-#define ADC_VALUE ADCH                      //register where 8-bit ADC value kept
-
-#define CLK 7372800                         //clock rate
-#define BAUD 9600                           //baud rate
-#define UBBR ((CLK/16/BAUD)-1)              //serial UBBR
+//serial definitions
+#define CLK 7372800                             //clock rate
+#define BAUD 9600                               //baud rate
+#define UBBR ((CLK/16/BAUD)-1)                  //serial UBBR (should be 47)
 
 
-//definitions of previosuly declared header file variables
+//ADC definitions
+#define ADC_VALUE ADCH                          //register where 8-bit ADC value kept
+#define LEFT_LDR ((char)0x02)                   //left LDR pin on board. Corresponds to PC2 (ADC2)
+#define RIGHT_LDR ((char)0x03)                  //right LDR pin on board. Corresponds to PC3(ADC3)
+
+
+//function definitions
+
+
+//definitions from header file variables
 volatile uint8_t ADC_COMPLETE_FLAG = 0;
-volatile char ADC_LEFT_RIGHT_FLAG = 0;       //0 = LEFT_LDR, 1 = RIGHT_LDR 
 
+/**************************************************************************************************************************/
 
-//ADC Definitions
-#define LEFT_LDR ((char)0x02)       //left LDR pin on board. Corresponds to PC2 (ADC2)
-#define RIGHT_LDR ((char)0x03)      //right LDR pin on board. Corresponds to PC3(ADC3)
 
 int main( void )
 {
@@ -46,7 +49,7 @@ int main( void )
     /********************************* INITIALIZATIONS ********************************/
 
     lcd_init();                 //Initialize the LCD display
-    init_servo();               //Initialize servo 
+    servo_init();               //Initialize servo 
     timer_init();               //Initialize the PWM timer 
     ADC_init();                 //Initialize ADC
     adc_timer_init();           //Initialize the ADC timer
@@ -60,6 +63,7 @@ int main( void )
     char buffer_left[4], buffer_right[4];                   //buffer used to convert adc_val to string for print
     uint8_t n;                                              //stores number of last element in buffer
     char ADC_LCD_DISPLAY;                                   //flag for whether to display ADC values on LCD
+
 
     /*********************************************************************************/
 
@@ -80,12 +84,6 @@ int main( void )
     lcd_moveto(1,0);
     _delay_ms(1000);
 
-    // for (unsigned int i = 0; i < 10; i++)
-    //     {
-    //         _delay_ms(1000); 
-    //         PWM_COUNTER++;
-    //     }
-
 
     while (1)  // Loop forever
     {
@@ -93,31 +91,30 @@ int main( void )
 
 /************************************ ADC calculations *************************************/
 
+        orient_servo(new_adc_val_left, new_adc_val_right);              //Correct servo orientation
 
-        if(ADC_COMPLETE_FLAG)                                         //check if ADC complete
+        if(ADC_COMPLETE_FLAG)                                           //check if ADC complete
         {
 
-            ADC_COMPLETE_FLAG = 0;                                    //turn ADC flag off
+            ADC_COMPLETE_FLAG = 0;                                      //turn ADC flag off
 
-
-            // if (ADC_LEFT_RIGHT_FLAG)                                  //ADC_LEFT_RIGHT_FLAG = 1 (RIGHT_LDR)
-            if ((ADMUX & 0x0F) == RIGHT_LDR)
+            if ((ADMUX & 0x0F) == RIGHT_LDR)                            //check if RIGHT_LDR mux value
             {
 
-                new_adc_val_right = ADC_VALUE;                        //read in new ADC value for RIGHT_LDR
+                new_adc_val_right = ADC_VALUE;                          //read in new ADC value for RIGHT_LDR
                 ADMUX &= 0xF0;                                          //clears MUX bits for ADC
-                ADMUX |= LEFT_LDR;                                    //assigns select bits for next ADC measurement (LEFT_LDR)
+                ADMUX |= LEFT_LDR;                                      //assigns select bits for next ADC measurement (LEFT_LDR)
                 buffer_right[0] = '\0';
                 n = sprintf(buffer_right, "%u", new_adc_val_right);     //convert byte into string of int value
                 buffer_right[n] = '\0';                                 //append null terminator
 
             }
-            else                                                       //ADC_LEFT_RIGHT_FLAG = 0 (LEFT_LDR)
+            else                                                        //else LEFT_LDR mux value
             {
 
-                new_adc_val_left = ADC_VALUE;                          //read in new ADC value for LEFT_LDR
+                new_adc_val_left = ADC_VALUE;                           //read in new ADC value for LEFT_LDR
                 ADMUX &= 0xF0;                                          //clears MUX bits for ADC
-                ADMUX |= RIGHT_LDR;                                    //assigns select bits for next ADC measurement (RIGHT_LDR)
+                ADMUX |= RIGHT_LDR;                                     //assigns select bits for next ADC measurement (RIGHT_LDR)
                 buffer_left[0] = '\0';                                  //clear buffers
                 n = sprintf(buffer_left, "%u", new_adc_val_left);       //convert byte into string of int value
                 buffer_left[n] = '\0';                                  //append null terminator
@@ -135,12 +132,11 @@ int main( void )
                     lcd_moveto(1, 0);
                     lcd_stringout("LEFT_LDR: ");
                     lcd_stringout(buffer_left);
-                    old_adc_val_right = new_adc_val_right;                  //update value
+                    old_adc_val_right = new_adc_val_right;              //update value for comparison
 
                 }
                 if (new_adc_val_left != old_adc_val_left)
                 {
-                    // _delay_ms(100);
                     lcd_writecommand(1);
                     lcd_moveto(0, 0);
                     lcd_stringout("RIGHT_LDR: ");
@@ -148,7 +144,7 @@ int main( void )
                     lcd_moveto(1, 0);
                     lcd_stringout("LEFT_LDR: ");
                     lcd_stringout(buffer_left);
-                    old_adc_val_left = new_adc_val_left;                    //update value
+                    old_adc_val_left = new_adc_val_left;                //update value for comparison
 
                 }
             }
@@ -158,8 +154,14 @@ int main( void )
 /**********************************************************************************************/
         
 
-    }             
+    }            
 
 	return 0;
 }
 
+
+/******************************************** FUNCTIONS *********************************************/
+
+
+
+/****************************************************************************************************/

@@ -9,7 +9,7 @@ void timer_init()
 
 		TCNT1 = 0;                              //initialize counter value to 0
 		OCR1A = 1822;                           //CONT. MOTION SERVO CONTROL (based off ICR1 = 18400):
-												//No Motion       --> OCR1A  = (1820 - 1824)
+												// No Motion      --> OCR1A  = (1820 - 1824)
 												// anticlockwise  --> OCR1A >= 1825
 												// clockwise      --> OCR1A <= 1819
 		ICR1 = 18400;							 //18400 = 20 ms, 50Hz cycle
@@ -36,11 +36,44 @@ void adc_timer_init()
 }
 
 
-/********************************************* SERVO CODE FOR PWM ****************************************************************/
+/********************************************* SERVO CODE FUNCTIONS ****************************************************************/
 
-void init_servo()
+void servo_init()										//initialize servo
 {
-	DDRB |= (1 << SERVO_PORT);                //sets PB2 to output 
+	DDRB |= (1 << SERVO_PORT);                			//sets PB2 to output 
+}
+
+/*	
+	more light = lower ADC value
+	increasing PWM_COUNTER moves anticlockwise (towards left)
+	decreasing moves clockwise (towards right)
+*/
+
+void orient_servo(uint8_t left, uint8_t right)			//adjusts servo based on LDR values
+{
+    int error = right - left;							//calculate difference (aka error)
+
+    if ( error > ADC_THRESHOLD_DIFF)                	//right has less light than left
+    {
+        if (PWM_COUNTER <= PWM_THRESHOLD_HIGH)			//stay below guard value
+        {
+            PWM_COUNTER++;
+        }
+    }
+
+    else if ( error < (-1 * ADC_THRESHOLD_DIFF) )   	//right has more light than left
+    {
+        if (PWM_COUNTER >= PWM_THRESHOLD_LOW)			//stay above guard value
+        {
+            PWM_COUNTER--;
+        }    
+    }
+
+    else                                               	//within threshold range (don't move)
+    {
+        PWM_COUNTER = 1822;
+    }
+
 }
 
 /********************************************************************************************************************************/
@@ -61,9 +94,6 @@ ISR (TIMER1_OVF_vect)  // timer1 overflow interrupt service routine
 
 }
 
-ISR (TIMER0_OVF_vect)
-{
-	// ADC_LEFT_RIGHT_FLAG ^= 1;
-}
+ISR (TIMER0_OVF_vect){}
 
 /********************************************************************************************************************************/
