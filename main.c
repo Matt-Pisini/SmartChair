@@ -3,7 +3,7 @@
 EE459 Final Project Main Source Code
 
 Team Members: 	Matt Pisini, Jessica Mow, Zechen Zhou
-Date: 			2/25/20
+Date: 			3/1/20
 Purpose:		Code controlling all SmartChair functionality
 
 **************************************************************/
@@ -31,6 +31,7 @@ Purpose:		Code controlling all SmartChair functionality
 #define ADC_VALUE ADCH                          //register where 8-bit ADC value kept
 #define LEFT_LDR ((char)0x02)                   //left LDR pin on board. Corresponds to PC2 (ADC2)
 #define RIGHT_LDR ((char)0x03)                  //right LDR pin on board. Corresponds to PC3(ADC3)
+#define ADC_LCD_DISPLAY ((char) 0)              //flag for whether to display ADC values on LCD
 
 
 //function definitions
@@ -72,24 +73,25 @@ int main( void )
    
     /*********************************** DECLARATIONS *********************************/
 
-    char buffer_left[4], buffer_right[4];                   //buffer used to convert adc_val to string for print
-    char ADC_LCD_DISPLAY;                                   //flag for whether to display ADC values on LCD
-
+    char buffer_left[4], buffer_right[4];                   //buffer used to convert adc_val to string for LCD print
 
     /*********************************************************************************/
 
     /*********************************** DEFINITIONS *********************************/
 
-    ADC_LCD_DISPLAY = 1;
-
     /*********************************************************************************/
 
-    lcd_writecommand(1);
-    lcd_moveto(0, 0);
 
-    lcd_stringout("Starting: ");
+    for (int i = 0; i < 10; i++)
+    {
+        lcd_clear();
+        lcd_moveto(0,0);
+        lcd_stringout("yeeet: ");
+        _delay_ms(250);
+        lcd_row_blink(0);
+        _delay_ms(250);
+    }
     // lcd_stringout_P((char *) str1);
-    lcd_moveto(1,0);
     _delay_ms(1000);
 
 
@@ -119,6 +121,7 @@ int main( void )
 }
 
 
+
 /******************************************** FUNCTIONS *********************************************/
 
 void display_ADC_LCD(char *buf_right, char *buf_left)           //displays ADC values to LCD
@@ -145,22 +148,18 @@ void display_ADC_LCD(char *buf_right, char *buf_left)           //displays ADC v
         lcd_stringout(buf_left);
         old_adc_val_left = new_adc_val_left;                    //update value for comparison
     }
-
 }
 
 
 void update_ADC(char *buf_right, char *buf_left)                //updates ADC value when ready
 {
-    uint8_t n;
-
     if ((ADMUX & 0x0F) == RIGHT_LDR)                            //check if RIGHT_LDR mux value
     {
         new_adc_val_right = ADC_VALUE;
         ADMUX &= 0xF0;                                          //clears MUX bits for ADC        
         ADMUX |= LEFT_LDR;                                      //assigns select bits for next ADC measurement (LEFT_LDR)
         buf_right[0] = '\0';                                    //clear buffers
-        n = sprintf(buf_right, "%u", new_adc_val_right);        //convert byte into string of int value
-        buf_right[n] = '\0'; 
+        sprintf(buf_right, "%u", new_adc_val_right);        //convert byte into string of int value
     }
     else
     {
@@ -168,8 +167,7 @@ void update_ADC(char *buf_right, char *buf_left)                //updates ADC va
         ADMUX &= 0xF0;                                          //clears MUX bits for ADC
         ADMUX |= RIGHT_LDR;                                     //assigns select bits for next ADC measurement (RIGHT_LDR)  
         buf_left[0] = '\0';                                     //clear buffers
-        n = sprintf(buf_left, "%u", new_adc_val_left);          //convert byte into string of int value
-        buf_left[n] = '\0';           
+        sprintf(buf_left, "%u", new_adc_val_left);          //convert byte into string of int value
     }
 }
 
