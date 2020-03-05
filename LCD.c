@@ -25,7 +25,7 @@ Source: "at328-5.c - Demonstrate interface to a parallel LCD display"
 #define LCD_Status     (1 << PD7) // Bit in Port D for LCD busy status
 #endif
 
-uint8_t row_offsets[] = {0x00, 0x40, 0x14, 0x54};
+const uint8_t row_offsets[4] = {0x00, 0x40, 0x14, 0x54};
 
 /*
   lcd_stringout_P - Print the contents of the character string "s" starting at LCD

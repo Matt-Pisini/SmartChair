@@ -47,12 +47,35 @@ uint8_t new_adc_val_left, new_adc_val_right;            //stores new ADC value f
 uint8_t old_adc_val_left, old_adc_val_right;            //stores old ADC value from ADCH register
 
 
-            /********************************* LCD STRINGS (FLASH MEM.) ********************************/
 
-                const unsigned char str1[] PROGMEM = "Very nice";
+            /********************************* LCD STRING STATE MACHINE (FLASH MEM. 32KB) ********************************/
+ 
+                                /******STATE 0******/
+
+                const char string[] PROGMEM = "STUFF";
+                const char string2[] PROGMEM = "STUFF2";
+                const char string3[] PROGMEM = "STUFF3";
+
+                PGM_P const state_0[] PROGMEM = {string, string2, string3};
+
+// static const PGM_P * states[] = {state_0};
+                                /******STATE 1******/
+
 
             /********************************************************************************************/
+void lcd_string_state_P(int num_arg)
+{
+    char buffer[10];
+    lcd_moveto(0, 1);
 
+    for (unsigned char i = 0; i < num_arg; i++)
+    {
+        strcpy_P(buffer, (PGM_P)pgm_read_word(&(state_0[i])));
+        lcd_stringout(buffer);
+        lcd_moveto(i + 1, 1);
+    }
+
+};
 
 /**************************************************************************************************************************/
 
@@ -80,18 +103,14 @@ int main( void )
     /*********************************** DEFINITIONS *********************************/
 
     /*********************************************************************************/
+// lcd_clear();
+// lcd_moveto(0,0);
+// lcd_stringout_P((char *) str1);
+// _delay_ms(2000);
+    lcd_clear();
+    lcd_moveto(0,0);
+    lcd_string_state_P(3);
 
-
-    for (int i = 0; i < 10; i++)
-    {
-        lcd_clear();
-        lcd_moveto(0,0);
-        lcd_stringout("yeeet: ");
-        _delay_ms(250);
-        lcd_row_blink(0);
-        _delay_ms(250);
-    }
-    // lcd_stringout_P((char *) str1);
     _delay_ms(1000);
 
 
