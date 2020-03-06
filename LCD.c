@@ -60,24 +60,24 @@ void lcd_stringout_P(char *s)
 
 // }
 //TEST THIS!!!
-void lcd_string_state_P(const char * const s[], int index)
+#include <stdio.h>
+void lcd_string_state_P(const char * const s[], int size, int index)
 {
     char buffer[20];
     lcd_moveto(0, 1);
-    int num_elements = (sizeof(s)/sizeof(s[0]));
     int iterator;
     int top_value;
     int lcd_row = 1;
 
-    if (num_elements <= 4)
+    if (size <= 4)
     {
       iterator = 0;
-      top_value = num_elements - 1;
+      top_value = size;
     }
-    else if ( (num_elements - index) < 4)
+    else if ( (size - index) < 4)
     {
-      iterator = num_elements - 4;
-      top_value = num_elements - 1;
+      iterator = size - 4;
+      top_value = size - 1;
     }
     else
     {
