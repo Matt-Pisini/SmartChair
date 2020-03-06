@@ -2,6 +2,12 @@
 
 /**************** LCD STRING STATE MACHINE (FLASH MEM. 32KB) ****************/
 
+/*
+	NOTE: each string can be AT MOST 19 characters. The LCD screen is only
+	20 characters and we have chosen to start on column 1 because of the 
+	cursor display. If it is more than this it will mess up display...
+*/
+
                     /******STATE 0: Splash Screen ******/
 
     const char state0_string0[] PROGMEM = "Welcome to";
