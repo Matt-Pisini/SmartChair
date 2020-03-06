@@ -18,6 +18,7 @@ Purpose:		Code controlling all SmartChair functionality
 #include "LCD.h"
 #include "serial.h"
 #include "ADC.h"
+#include "lcd_strings.h"
 
 /******************************************************* DEFINITIONS ******************************************************/
 
@@ -28,10 +29,7 @@ Purpose:		Code controlling all SmartChair functionality
 
 
 //ADC definitions
-#define ADC_VALUE ADCH                          //register where 8-bit ADC value kept
-#define LEFT_LDR ((char)0x02)                   //left LDR pin on board. Corresponds to PC2 (ADC2)
-#define RIGHT_LDR ((char)0x03)                  //right LDR pin on board. Corresponds to PC3(ADC3)
-#define ADC_LCD_DISPLAY ((char) 0)              //flag for whether to display ADC values on LCD
+static const char ADC_LCD_DISPLAY = 0;          //flag for whether to display ADC values on LCD
 
 
 //function definitions
@@ -40,42 +38,25 @@ void display_ADC_LCD(char *buf_right, char *buf_left);
 
 
 //definitions from header file variables
-volatile uint8_t ADC_COMPLETE_FLAG = 0;
+volatile unsigned char ADC_COMPLETE_FLAG = 0;
+volatile uint8_t new_adc_val_left, new_adc_val_right;   //stores new ADC value from ADCH register
+volatile uint8_t old_adc_val_left, old_adc_val_right;   //stores old ADC value from ADCH register
 
 //Global definitions
-uint8_t new_adc_val_left, new_adc_val_right;            //stores new ADC value from ADCH register
-uint8_t old_adc_val_left, old_adc_val_right;            //stores old ADC value from ADCH register
+volatile unsigned char STATE;                           //stores value for the state machine
+volatile unsigned char ENCODER_VALUE;                   //maintains current value of encoder
+volatile unsigned char BUTTON_FLAG;                     //flag for whether button is pressed
 
 
 
-            /********************************* LCD STRING STATE MACHINE (FLASH MEM. 32KB) ********************************/
- 
-                                /******STATE 0******/
+/**************** Pointers to state_array *****************/
 
-                const char string[] PROGMEM = "STUFF";
-                const char string2[] PROGMEM = "STUFF2";
-                const char string3[] PROGMEM = "STUFF3";
-
-                PGM_P const state_0[] PROGMEM = {string, string2, string3};
-
-// static const PGM_P * states[] = {state_0};
-                                /******STATE 1******/
+PGM_P const state_0[] PROGMEM = {state0_string0, state0_string1, state0_string2}; 
+// PGM_P = (const char *)
+PGM_P const state_1[] PROGMEM = {state1_string0, state1_string1, state1_string2}; 
 
 
             /********************************************************************************************/
-void lcd_string_state_P(int num_arg)
-{
-    char buffer[10];
-    lcd_moveto(0, 1);
-
-    for (unsigned char i = 0; i < num_arg; i++)
-    {
-        strcpy_P(buffer, (PGM_P)pgm_read_word(&(state_0[i])));
-        lcd_stringout(buffer);
-        lcd_moveto(i + 1, 1);
-    }
-
-};
 
 /**************************************************************************************************************************/
 
@@ -102,14 +83,17 @@ int main( void )
 
     /*********************************** DEFINITIONS *********************************/
 
+    STATE = 0;                  //initialize to 'Splash Screen' state 0
+
     /*********************************************************************************/
-// lcd_clear();
-// lcd_moveto(0,0);
-// lcd_stringout_P((char *) str1);
-// _delay_ms(2000);
+
     lcd_clear();
     lcd_moveto(0,0);
-    lcd_string_state_P(3);
+
+    lcd_string_state_P(state_0, 3);
+    _delay_ms(2000);
+    lcd_string_state_P(state_1, 3);
+
 
     _delay_ms(1000);
 
@@ -133,8 +117,28 @@ int main( void )
                
 /**********************************************************************************************/
         
+/************************************ FSM UPDATE & DISPLAY *************************************/
+
+        switch(STATE) {
+
+            case 0:
+
+                lcd_string_state_P(state_0, 3);
+                lcd_cursor(ENCODER_VALUE);
+
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+                break;
+
+        }
 
     }            
+
+/**********************************************************************************************/
 
 	return 0;
 }
@@ -142,52 +146,5 @@ int main( void )
 
 
 /******************************************** FUNCTIONS *********************************************/
-
-void display_ADC_LCD(char *buf_right, char *buf_left)           //displays ADC values to LCD
-{
-    if (new_adc_val_right != old_adc_val_right) 
-    {
-        lcd_writecommand(1);
-        lcd_moveto(0, 0);
-        lcd_stringout("RIGHT_LDR: ");
-        lcd_stringout(buf_right);
-        lcd_moveto(1, 0);
-        lcd_stringout("LEFT_LDR: ");
-        lcd_stringout(buf_left);
-        old_adc_val_right = new_adc_val_right;                  //update value for comparison
-    }
-    if (new_adc_val_left != old_adc_val_left)
-    {
-        lcd_writecommand(1);
-        lcd_moveto(0, 0);
-        lcd_stringout("RIGHT_LDR: ");
-        lcd_stringout(buf_right);
-        lcd_moveto(1, 0);
-        lcd_stringout("LEFT_LDR: ");
-        lcd_stringout(buf_left);
-        old_adc_val_left = new_adc_val_left;                    //update value for comparison
-    }
-}
-
-
-void update_ADC(char *buf_right, char *buf_left)                //updates ADC value when ready
-{
-    if ((ADMUX & 0x0F) == RIGHT_LDR)                            //check if RIGHT_LDR mux value
-    {
-        new_adc_val_right = ADC_VALUE;
-        ADMUX &= 0xF0;                                          //clears MUX bits for ADC        
-        ADMUX |= LEFT_LDR;                                      //assigns select bits for next ADC measurement (LEFT_LDR)
-        buf_right[0] = '\0';                                    //clear buffers
-        sprintf(buf_right, "%u", new_adc_val_right);        //convert byte into string of int value
-    }
-    else
-    {
-        new_adc_val_left = ADC_VALUE;
-        ADMUX &= 0xF0;                                          //clears MUX bits for ADC
-        ADMUX |= RIGHT_LDR;                                     //assigns select bits for next ADC measurement (RIGHT_LDR)  
-        buf_left[0] = '\0';                                     //clear buffers
-        sprintf(buf_left, "%u", new_adc_val_left);          //convert byte into string of int value
-    }
-}
 
 /****************************************************************************************************/

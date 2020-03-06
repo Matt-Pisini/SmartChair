@@ -11,7 +11,8 @@ void lcd_wait(void);
 void lcd_stringout_P(char *);
 void lcd_row_blink(unsigned char);
 void lcd_clear();
-
+void lcd_string_state_P(const char * const s[], int num_arg);
+void lcd_cursor(int row);
 
 /****************************************************************************************************/
 

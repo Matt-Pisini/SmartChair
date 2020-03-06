@@ -43,6 +43,65 @@ void lcd_stringout_P(char *s)
 }
 
 /*
+  lcd_string_state_P — takes in a pointer to state_x, which is an array of pointers to cstrings(char *)
+  that correspond to each row of the state. It prints each element on the row on successive lines.
+*/
+// void lcd_string_state_P(const char * const s[], int num_arg)
+// {
+//     char buffer[20];
+//     lcd_moveto(0, 1);
+
+//     for (int i = 0; i < num_arg; i++)
+//     {
+//         strcpy_P(buffer, (PGM_P)pgm_read_word(&(s[i])));
+//         lcd_stringout(buffer);
+//         lcd_moveto(i + 1, 1);
+//     }
+
+// }
+//TEST THIS!!!
+void lcd_string_state_P(const char * const s[], int index)
+{
+    char buffer[20];
+    lcd_moveto(0, 1);
+    int num_elements = (sizeof(s)/sizeof(s[0]));
+    int iterator;
+    int top_value;
+    int lcd_row = 1;
+
+    if (num_elements <= 4)
+    {
+      iterator = 0;
+      top_value = num_elements - 1;
+    }
+    else if ( (num_elements - index) < 4)
+    {
+      iterator = num_elements - 4;
+      top_value = num_elements - 1;
+    }
+    else
+    {
+      iterator = index;
+      top_value = index + 4;
+    }
+
+    for (; iterator < top_value; iterator++)
+    {
+        strcpy_P(buffer, (PGM_P)pgm_read_word(&(s[iterator])));
+        lcd_stringout(buffer);
+        lcd_moveto(lcd_row, 1);
+        lcd_row++;
+    }
+
+}
+void lcd_cursor(int row)
+{
+  lcd_moveto(row, 0);
+  lcd_writedata('>');
+  lcd_moveto(row, 0);
+}
+
+/*
   lcd_init - Do various things to force a initialization of the LCD
   display by instructions, and then set up the display parameters and
   turn the display on.

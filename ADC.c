@@ -1,6 +1,8 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <stdio.h>
 #include "ADC.h"
+#include "LCD.h"
 
 
 void ADC_init()
@@ -25,6 +27,55 @@ void ADC_conversion(char ADC_MUX)
 	ADCSRA |= (1 << ADSC);				//initiates one conversion
 
 }
+
+
+void display_ADC_LCD(char *buf_right, char *buf_left)           //displays ADC values to LCD
+{
+    if (new_adc_val_right != old_adc_val_right) 
+    {
+        lcd_writecommand(1);
+        lcd_moveto(0, 0);
+        lcd_stringout("RIGHT_LDR: ");
+        lcd_stringout(buf_right);
+        lcd_moveto(1, 0);
+        lcd_stringout("LEFT_LDR: ");
+        lcd_stringout(buf_left);
+        old_adc_val_right = new_adc_val_right;                  //update value for comparison
+    }
+    if (new_adc_val_left != old_adc_val_left)
+    {
+        lcd_writecommand(1);
+        lcd_moveto(0, 0);
+        lcd_stringout("RIGHT_LDR: ");
+        lcd_stringout(buf_right);
+        lcd_moveto(1, 0);
+        lcd_stringout("LEFT_LDR: ");
+        lcd_stringout(buf_left);
+        old_adc_val_left = new_adc_val_left;                    //update value for comparison
+    }
+}
+
+
+void update_ADC(char *buf_right, char *buf_left)                //updates ADC value when ready
+{
+    if ((ADMUX & 0x0F) == RIGHT_LDR)                            //check if RIGHT_LDR mux value
+    {
+        new_adc_val_right = ADC_VALUE;
+        ADMUX &= 0xF0;                                          //clears MUX bits for ADC        
+        ADMUX |= LEFT_LDR;                                      //assigns select bits for next ADC measurement (LEFT_LDR)
+        buf_right[0] = '\0';                                    //clear buffers
+        sprintf(buf_right, "%u", new_adc_val_right);        //convert byte into string of int value
+    }
+    else
+    {
+        new_adc_val_left = ADC_VALUE;
+        ADMUX &= 0xF0;                                          //clears MUX bits for ADC
+        ADMUX |= RIGHT_LDR;                                     //assigns select bits for next ADC measurement (RIGHT_LDR)  
+        buf_left[0] = '\0';                                     //clear buffers
+        sprintf(buf_left, "%u", new_adc_val_left);          //convert byte into string of int value
+    }
+}
+
 
 //interrupt service routine
 ISR (ADC_vect)
