@@ -25,7 +25,7 @@ Source: "at328-5.c - Demonstrate interface to a parallel LCD display"
 #define LCD_Status     (1 << PD7) // Bit in Port D for LCD busy status
 #endif
 
-const uint8_t row_offsets[4] = {0x00, 0x40, 0x14, 0x54};
+const uint8_t row_offsets[4] = {0x00, 0x40, 0x14, 0x54};    //values for starting points of LCD
 
 /*
   lcd_stringout_P - Print the contents of the character string "s" starting at LCD
@@ -43,24 +43,16 @@ void lcd_stringout_P(char *s)
 }
 
 /*
-  lcd_string_state_P — takes in a pointer to state_x, which is an array of pointers to cstrings(char *)
-  that correspond to each row of the state. It prints each element on the row on successive lines.
+  lcd_string_state_P - It prints each element of the state on successive rows.
+
+  Takes in 3 arguments:
+  1)A pointer to state_x, which is an array of pointers to cstrings(char *)
+    that correspond to each row of the state.
+  2)Size of the arrrray of pointers, i.e. how many elements there are.
+  3)Index, which is the first elements of the array to print on LCD row 0.
+
 */
-// void lcd_string_state_P(const char * const s[], int num_arg)
-// {
-//     char buffer[20];
-//     lcd_moveto(0, 1);
 
-//     for (int i = 0; i < num_arg; i++)
-//     {
-//         strcpy_P(buffer, (PGM_P)pgm_read_word(&(s[i])));
-//         lcd_stringout(buffer);
-//         lcd_moveto(i + 1, 1);
-//     }
-
-// }
-//TEST THIS!!!
-#include <stdio.h>
 void lcd_string_state_P(const char * const s[], int size, int index)
 {
     char buffer[20];
@@ -69,6 +61,7 @@ void lcd_string_state_P(const char * const s[], int size, int index)
     int top_value;
     int lcd_row = 1;
 
+    //Decides which element to start on and what value to print to
     if (size <= 4)
     {
       iterator = 0;
@@ -94,6 +87,10 @@ void lcd_string_state_P(const char * const s[], int size, int index)
     }
 
 }
+
+/*
+  lcd_cursor - displays the cursor value on particular row of LCD.
+*/
 void lcd_cursor(int row)
 {
   lcd_moveto(row, 0);
