@@ -20,6 +20,7 @@ Purpose:		Code controlling all SmartChair functionality
 #include "ADC.h"
 #include "lcd_strings.h"
 #include "encoder.h"
+#include "button.h"
 
 /******************************************************* DEFINITIONS ******************************************************/
 
@@ -38,6 +39,9 @@ volatile unsigned char ADC_COMPLETE_FLAG = 0;           //flag changed in ADC_ve
 volatile uint8_t new_adc_val_left, new_adc_val_right;   //stores new ADC value from ADCH register
 volatile uint8_t old_adc_val_left, old_adc_val_right;   //stores old ADC value from ADCH register
 volatile unsigned char ENCODER_VALUE;                   //maintains current value of encoder
+volatile unsigned char BUTTON_FLAG;
+volatile unsigned char encoder_a;
+volatile unsigned char encoder_b;
 
 //Global definitions
 volatile unsigned char STATE;                           //stores value for the state machine
@@ -58,6 +62,8 @@ PGM_P const state_0[] PROGMEM =
                     state0_string3
                 }; 
 
+const int STATE0_SIZE = (sizeof(state_0)/sizeof(state_0[0]));
+
 //  State 1
 PGM_P const state_1[] PROGMEM = 
                 {   
@@ -66,9 +72,13 @@ PGM_P const state_1[] PROGMEM =
                     state1_string2
                 }; 
 
+const int STATE1_SIZE = (sizeof(state_1)/sizeof(state_1[0]));
+
 //  State 2
 
-/**************************************************************************************************************************/
+/***********************************************************/
+
+
 
 
 int main( void )
@@ -82,46 +92,44 @@ int main( void )
     timer_init();               //Initialize the PWM timer 
     ADC_init();                 //Initialize ADC
     adc_timer_init();           //Initialize the ADC timer
-
-    /*********************************************************************************/
+    button_init();
+    encoder_init();
    
     /*********************************** DECLARATIONS *********************************/
 
-    char buffer_left[4], buffer_right[4];                   //buffer used to convert adc_val to string for LCD print
+    char buffer_left[4], buffer_right[4];   //buffer used to convert adc_val to string for LCD print
 
-    /*********************************************************************************/
 
     /*********************************** DEFINITIONS *********************************/
 
     STATE = 0;                  //initialize to 'Splash Screen' state 0
-    ENCODER_VALUE = 0;          
-    LCD_CHANGE_FLAG = 1;
-
-    /*********************************************************************************/
+    ENCODER_VALUE = 0;          //initialize encoder value to 0
+    LCD_CHANGE_FLAG = 1;        //initialize as ready to display to lcd
+    BUTTON_FLAG = 0;
 
     lcd_clear();
 
 
     while (1)  // Infinite loop
     {
-        orient_servo(new_adc_val_left, new_adc_val_right);              //Orient servo
 
-/************************************ ADC UPDATE & DISPLAY *************************************/
+/******************************** ADC UPDATE & DISPLAY + PWM **********************************/
 
-
-        if(ADC_COMPLETE_FLAG)                                           //check if ADC complete
+        if(ADC_COMPLETE_FLAG)                               //check if ADC complete
         {
-            ADC_COMPLETE_FLAG = 0;                                      //turn ADC flag off
+            ADC_COMPLETE_FLAG = 0;                          //turn ADC flag off
             update_ADC(buffer_right, buffer_left);
         }
-        if (ADC_LCD_DISPLAY)                                        //ADC_LCD_DISPLAY = 1 if ADC values need to be displayed on LCD
+        if (ADC_LCD_DISPLAY)                                //ADC_LCD_DISPLAY = 1 if ADC values need to be displayed on LCD
         {
             display_ADC_LCD(buffer_right, buffer_left);
         }
+
+        orient_servo(new_adc_val_left, new_adc_val_right);  //Orient servo
                
-/**********************************************************************************************/
         
 /************************************ FSM UPDATE & DISPLAY *************************************/
+        
         if (LCD_CHANGE_FLAG)
         {
     
@@ -129,13 +137,13 @@ int main( void )
 
                 case 0:
 
-                    lcd_string_state_P(state_0, (sizeof(state_0)/sizeof(state_0[0])), 0);
+                    lcd_string_state_P(state_0, STATE0_SIZE, 0);
                     lcd_cursor(ENCODER_VALUE);
                     break;
 
                 case 1:
 
-                    lcd_string_state_P(state_1, (sizeof(state_1)/sizeof(state_1[0])), 0);
+                    lcd_string_state_P(state_1, STATE1_SIZE, 0);
                     lcd_cursor(ENCODER_VALUE);
                     break;
 
