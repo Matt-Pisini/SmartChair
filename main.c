@@ -40,8 +40,8 @@ volatile uint8_t new_adc_val_left, new_adc_val_right;   //stores new ADC value f
 volatile uint8_t old_adc_val_left, old_adc_val_right;   //stores old ADC value from ADCH register
 volatile unsigned char ENCODER_VALUE;                   //maintains current value of encoder
 volatile unsigned char BUTTON_FLAG;
-volatile unsigned char encoder_a;
-volatile unsigned char encoder_b;
+volatile unsigned char new_encoder_state;
+volatile unsigned char old_encoder_state;
 
 //Global definitions
 volatile unsigned char STATE;                           //stores value for the state machine
@@ -104,14 +104,49 @@ int main( void )
 
     STATE = 0;                  //initialize to 'Splash Screen' state 0
     ENCODER_VALUE = 0;          //initialize encoder value to 0
-    LCD_CHANGE_FLAG = 1;        //initialize as ready to display to lcd
+    LCD_CHANGE_FLAG = 0;        //initialize as ready to display to lcd
     BUTTON_FLAG = 0;
-
+    ENCODER_VALUE = 0;
+    old_encoder_state = new_encoder_state;      //initialize encoder values to equal each other
+    char prev_button_flag = 1;
     lcd_clear();
+    // lcd_stringout("No Button");  
+    char buf[4];
 
 
     while (1)  // Infinite loop
     {
+
+/******************************** ROTARY ENCODER + BUTTON TEST **********************************/
+        
+        if (prev_button_flag != ENCODER_VALUE)
+        {
+            sprintf(buf, "%u", ENCODER_VALUE);        //convert byte into string of int value
+            lcd_clear();
+            lcd_moveto(0,0);
+            lcd_stringout(buf);
+            prev_button_flag = ENCODER_VALUE;
+        }
+
+        // if (prev_button_flag != BUTTON_FLAG)
+        // {
+        //     while ( BUTTON_FLAG )
+        //     {
+        //         lcd_clear();
+        //         lcd_stringout("Button!");
+        //         prev_button_flag = BUTTON_FLAG;
+
+        //     }
+        
+        //     lcd_clear();
+        //     lcd_stringout("No Button");
+        //     BUTTON_FLAG = 0; 
+        //     prev_button_flag = BUTTON_FLAG;
+        // }
+        
+
+
+
 
 /******************************** ADC UPDATE & DISPLAY + PWM **********************************/
 
