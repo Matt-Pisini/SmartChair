@@ -19,8 +19,7 @@ Purpose:		Code controlling all SmartChair functionality
 #include "serial.h"
 #include "ADC.h"
 #include "lcd_strings.h"
-#include "encoder.h"
-#include "button.h"
+#include "button_encoder.h"
 
 /******************************************************* DEFINITIONS ******************************************************/
 
@@ -39,13 +38,10 @@ volatile unsigned char ADC_COMPLETE_FLAG = 0;           //flag changed in ADC_ve
 volatile uint8_t new_adc_val_left, new_adc_val_right;   //stores new ADC value from ADCH register
 volatile uint8_t old_adc_val_left, old_adc_val_right;   //stores old ADC value from ADCH register
 volatile unsigned char ENCODER_VALUE;                   //maintains current value of encoder
-volatile unsigned char BUTTON_FLAG;
-volatile unsigned char new_encoder_state;
-volatile unsigned char old_encoder_state;
+volatile unsigned char BUTTON_FLAG;                     //if button is pressed, flag goes high
 
 //Global definitions
 volatile unsigned char STATE;                           //stores value for the state machine
-volatile unsigned char BUTTON_FLAG;                     //flag for whether button is pressed
 volatile unsigned char LCD_CHANGE_FLAG;                 //flag to only write to LCD if something has changed
 
 
@@ -92,8 +88,9 @@ int main( void )
     timer_init();               //Initialize the PWM timer 
     ADC_init();                 //Initialize ADC
     adc_timer_init();           //Initialize the ADC timer
-    button_init();
-    encoder_init();
+    button_init();              //intitialize button as interrupt on PB7
+    encoder_init();             //Initialize rotary encoder on PC0 & PC1
+    debouncer_init();           //Initialize timer for button debouncer
    
     /*********************************** DECLARATIONS *********************************/
 
@@ -107,10 +104,8 @@ int main( void )
     LCD_CHANGE_FLAG = 0;        //initialize as ready to display to lcd
     BUTTON_FLAG = 0;
     ENCODER_VALUE = 0;
-    old_encoder_state = new_encoder_state;      //initialize encoder values to equal each other
     char prev_button_flag = 1;
     lcd_clear();
-    // lcd_stringout("No Button");  
     char buf[4];
 
 
@@ -119,13 +114,13 @@ int main( void )
 
 /******************************** ROTARY ENCODER + BUTTON TEST **********************************/
         
-        if (prev_button_flag != ENCODER_VALUE)
+        if (prev_button_flag != BUTTON_FLAG)
         {
-            sprintf(buf, "%u", ENCODER_VALUE);        //convert byte into string of int value
+            sprintf(buf, "%u", BUTTON_FLAG);        //convert byte into string of int value
             lcd_clear();
             lcd_moveto(0,0);
             lcd_stringout(buf);
-            prev_button_flag = ENCODER_VALUE;
+            prev_button_flag = BUTTON_FLAG;
         }
 
         // if (prev_button_flag != BUTTON_FLAG)

@@ -11,11 +11,11 @@ void ADC_init()
 	ADMUX |= (1 << ADLAR);						//left adjust for 8 bit results
 	ADMUX |= (1 << REFS0);						//AVCC for high voltage selection
 
-	ADCSRA |= (1 << ADIE);						//ADC interrupt enable 
+	ADCSRA |= (1 << ADIE);						//enable ADC interrupt  
 	ADCSRA |= (1 << ADPS2) | (1 << ADPS1);		//prescaler = 64
 	
 	ADCSRA |= (1 << ADATE);						//sets autotrigger (controlled in ADCSRB)
-	ADCSRB |= (1 << ADTS2);						//timer/counter0 overflow interrupt trigger
+	ADCSRB |= (1 << ADTS2);						//sets timer/counter0 overflow interrupt as trigger
 	ADMUX |= 0x02;								//start mux on PC2 (ADC2)
 
 }
