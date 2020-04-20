@@ -135,7 +135,7 @@ void lcd_init(void)
 }
 
 /*
-  lcd_moveto - Move the cursor to the row and column given by the arguments.
+  lcd_ to - Move the cursor to the row and column given by the arguments.
   Row is 0 or 1, column is 0 - 15.
 */
 void lcd_moveto(unsigned char row, unsigned char col)
@@ -143,17 +143,6 @@ void lcd_moveto(unsigned char row, unsigned char col)
     unsigned char pos;
     pos = row_offsets[row] + col;
     lcd_writecommand(0x80 | pos);
-}
-
-void lcd_row_blink(unsigned char row)
-{
-  unsigned char pos = 0;
-  lcd_moveto(row, 0);
-  while(pos < 0x14)
-  {
-    lcd_writedata(0xff);
-    pos++;
-  }
 }
 
 void lcd_clear()

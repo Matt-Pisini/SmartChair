@@ -38,6 +38,9 @@ void debouncer_init()
 
 }
 
+
+/************* BUTON INTERRUPT VECTOR **************/
+
 ISR (PCINT0_vect)
 {
 
@@ -46,6 +49,8 @@ ISR (PCINT0_vect)
 	TCCR2B |= (1<< CS22) | (1 << CS20);		//sets debouncer timer (prescaler = 128)
 
 }
+
+/************* ROTARY ENCODER INTERRUPT VECTOR **************/
 
 ISR (PCINT1_vect)
 {
@@ -76,8 +81,11 @@ ISR (PCINT1_vect)
 	}
 }
 
-/**************************** DEBOUNCING TIMER *******************************/
-
+/**************************** DEBOUNCING TIMER FOR BUTTTON *******************************/
+/*
+	Datasheet for button indicates: "contact bounce (15 RPM) --> 5.0 ms maximum" 
+	Overflow timer triggers after ~4.4ms, then reads the value of the button.
+*/
 
 ISR (TIMER2_OVF_vect)
 {
