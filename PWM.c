@@ -12,7 +12,7 @@ void timer_init()
 												// No Motion      --> OCR1A  = (1820 - 1824)
 												// anticlockwise  --> OCR1A >= 1825
 												// clockwise      --> OCR1A <= 1819
-		ICR1 = 18400;							 //18400 = 20 ms, 50Hz cycle
+		ICR1 = 18400;							//18400 = 20 ms, 50Hz cycle
 
 		TIMSK1 |= (1 << TOIE1) | (1 << OCIE1A); //enable overflow interrupt & CompareA interrupt
 
@@ -22,17 +22,6 @@ void timer_init()
 		TCCR1B |= (1 << CS11);                  //sets prescaler to 8 and starts timer
 		PORTB |= (1 << SERVO_PORT); 
 			
-}
-
-/********************************************************************************************************************************/
-
-void adc_timer_init()
-{
-
-	TCCR0B |= (1 << CS02) | (1 << CS00);	//set prescaler to 1024
-
-	TIMSK0 |= (1 << TOIE0);					//overflow interrupt enable
-
 }
 
 

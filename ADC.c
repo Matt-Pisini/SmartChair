@@ -20,14 +20,18 @@ void ADC_init()
 
 }
 
-void ADC_conversion(char ADC_MUX)
+/********************************************************************************************************************************/
+
+void adc_timer_init()
 {
-	ADMUX &= 0xF0;						//clears MUX[3:0] bits
-	ADMUX |= ADC_MUX;					//assigns select bits for correct ADC module
-	ADCSRA |= (1 << ADSC);				//initiates one conversion
+
+    TCCR0B |= (1 << CS02) | (1 << CS00);    //set prescaler to 1024
+
+    TIMSK0 |= (1 << TOIE0);                 //overflow interrupt enable
 
 }
 
+/********************************************************************************************************************************/
 
 void display_ADC_LCD(char *buf_right, char *buf_left)           //displays ADC values to LCD
 {
@@ -55,6 +59,7 @@ void display_ADC_LCD(char *buf_right, char *buf_left)           //displays ADC v
     }
 }
 
+/********************************************************************************************************************************/
 
 void update_ADC(char *buf_right, char *buf_left)                //updates ADC value when ready
 {
@@ -76,7 +81,7 @@ void update_ADC(char *buf_right, char *buf_left)                //updates ADC va
     }
 }
 
-
+/********************************************************************************************************************************/
 //interrupt service routine
 ISR (ADC_vect)
 {

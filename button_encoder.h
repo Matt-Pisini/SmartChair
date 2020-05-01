@@ -4,8 +4,9 @@
 volatile unsigned char ENCODER_VALUE;									//maintains current value of encoder
 volatile unsigned char BUTTON_FLAG;										//Button has been pressed
 volatile unsigned char button_timer_flag;								//Triggers debouncing timer from button interrupt
+volatile unsigned char LCD_CHANGE_FLAG;                					//flag to indicate some LCD aspect has changed
 
-volatile unsigned char bits, a, b; 					//variables for each of 2 PINC registers (rotary encoders)
+volatile unsigned char bits, a, b; 										//variables for each of 2 PINC registers (rotary encoders)
 
 volatile unsigned char old_new_state;									//4-bit value used to index state transition table (rot_enc_table)
 volatile unsigned char value;											//Used to capture two 4-bit values of old_state_new_state into 1 register.
@@ -17,7 +18,6 @@ static int8_t rot_enc_table[] = {0,1,1,0,1,0,0,1,1,0,0,1,0,1,1,0};		//Table of v
 /**************************** FUNCTIONS ***************************/
 void encoder_init(); 
 void button_init();
-void debouncer_init();
 
 #define BUTTON_ENCODER_MODULE
 #endif 

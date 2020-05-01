@@ -11,6 +11,7 @@ static const char RIGHT_LDR = 0x03;             //right LDR pin on board. Corres
 /**************************** FUNCTIONS ***************************/
 
 void ADC_init();
+void adc_timer_init();
 void ADC_conversion(char ADC_MUX);
 void display_ADC_LCD(char *buf_right, char *buf_left);
 void update_ADC(char *buf_right, char *buf_left);

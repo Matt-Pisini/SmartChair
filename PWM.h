@@ -11,7 +11,6 @@
 /**************************** FUNCTIONS ***************************/
 
 void timer_init();
-void adc_timer_init();
 void servo_init();
 void orient_servo(uint8_t left, uint8_t right);
 

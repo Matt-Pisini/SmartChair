@@ -16,6 +16,14 @@ void button_init()
 {
 	PCICR |= (1 << PCIE0); 		//initializing interrupt register B for button
 	PCMSK0 |= (1 << PCINT7); 	//setting the register mask to pins
+ 
+	/******** DEBOUNCER **********/
+
+	//TIMER 2 (8-bit) --> normal operation.
+	//overflow occurs in ~4.4ms where interrupt is triggered.
+	TIMSK2 |= (1 << TOIE2);						//overflow interrupt enabled
+	TIFR2 |= (1 << TOV2);						//overflow flag — determines which comaparison based interrupt vector used
+
 }
 
 void encoder_init()
@@ -25,17 +33,6 @@ void encoder_init()
 	PORTC |= (1 << PC0 | 1 << PC1);     		//enable pull-ups on PC0, PC1 for rotary encoder
 	old_new_state = 0;
 	value = 0;
-}
-
-void debouncer_init()
-{
-
-	//TIMER 2 (8-bit) --> normal operation.
-	//overflow occurs in ~4.4ms where interrupt is triggered.
-
-	TIMSK2 |= (1 << TOIE2);						//overflow interrupt enabled
-	TIFR2 |= (1 << TOV2);						//overflow flag — determines which comaparison based interrupt vector used
-
 }
 
 
@@ -72,11 +69,13 @@ ISR (PCINT1_vect)
 		if ( (value & 0xff) == 0x2b)			//This is always ending sequence for encoder bounce (CCW) 
 		{
 			ENCODER_VALUE--;					//decrement encoder
+			LCD_CHANGE_FLAG = 1;				//cursor display has changed
 		}
 		
 		if ( (value & 0xff) == 0x17)			//This is always ending sequence for encoder bounce (CW)
 		{
 			ENCODER_VALUE++;					//increment encoder
+			LCD_CHANGE_FLAG = 1;				//cursor display has changed
 		}
 	}
 }
@@ -94,7 +93,7 @@ ISR (TIMER2_OVF_vect)
 	{
 		if ( PINB & (1 << PB7) )		//checks if button pushed
 		{
-			BUTTON_FLAG = 1;				//turn on button flag
+			BUTTON_FLAG = 1;			//turn on button flag
 		}
 
 		PCMSK0 |= (1 << PCINT7);		//re-enables interrupts on button input
