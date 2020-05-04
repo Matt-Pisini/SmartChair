@@ -14,6 +14,7 @@ Purpose:		Code controlling all SmartChair functionality
 #include <avr/interrupt.h>
 #include <stdio.h>
 #include <string.h> 
+#include <stdlib.h>
 #include "PWM.h"
 #include "LCD.h"
 #include "serial.h"
@@ -28,7 +29,6 @@ Purpose:		Code controlling all SmartChair functionality
 #define BAUD 9600                                       //baud rate
 #define UBBR ((CLK/16/BAUD)-1)                          //serial UBBR (should be 47)
 
-
 //ADC definitions
 static const char ADC_LCD_DISPLAY = 0;                  //flag for whether to display ADC values on LCD
 
@@ -37,7 +37,8 @@ static const char ADC_LCD_DISPLAY = 0;                  //flag for whether to di
 volatile unsigned char ADC_COMPLETE_FLAG = 0;           //flag changed in ADC_vect when ADC is complete
 volatile uint8_t new_adc_val_left, new_adc_val_right;   //stores new ADC value from ADCH register
 volatile uint8_t old_adc_val_left, old_adc_val_right;   //stores old ADC value from ADCH register
-volatile unsigned char ENCODER_VALUE;                   //maintains current value of encoder
+volatile int8_t CURRENT_ENCODER_VAL;    		        //maintains current value of encoder
+volatile int8_t PREV_ENCODER_VAL;
 volatile unsigned char BUTTON_FLAG;                     //if button is pressed, flag goes high
 volatile unsigned char LCD_CHANGE_FLAG;                 //flag to only write to LCD if something has changed
 
@@ -59,7 +60,9 @@ PGM_P const state_0[] PROGMEM =
 					state0_string4
 				}; 
 
-const int STATE0_SIZE = (sizeof(state_0)/sizeof(state_0[0]));
+// const int STATE0_SIZE = (sizeof(state_0)/sizeof(state_0[0]));
+#define STATE0_SIZE (sizeof(state_0)/sizeof(state_0[0]))
+
 
 //  State 1
 PGM_P const state_1[] PROGMEM = 
@@ -68,7 +71,7 @@ PGM_P const state_1[] PROGMEM =
 					state1_string2 
 				}; 
 
-const int STATE1_SIZE = (sizeof(state_1)/sizeof(state_1[0]));
+#define STATE1_SIZE (sizeof(state_1)/sizeof(state_1[0]))
 
 //  State 2
 PGM_P const state_2[] PROGMEM = 
@@ -79,7 +82,7 @@ PGM_P const state_2[] PROGMEM =
 					state2_string4
 				}; 
 
-const int STATE2_SIZE = (sizeof(state_2)/sizeof(state_2[0]));
+#define STATE2_SIZE (sizeof(state_2)/sizeof(state_2[0]))
 
 //  State 3
 PGM_P const state_3[] PROGMEM = 
@@ -91,7 +94,7 @@ PGM_P const state_3[] PROGMEM =
 					state3_string5
 				}; 
 
-const int STATE3_SIZE = (sizeof(state_3)/sizeof(state_3[0]));
+#define STATE3_SIZE (sizeof(state_3)/sizeof(state_3[0]))
 
 //  State 4
 PGM_P const state_4[] PROGMEM = 
@@ -102,7 +105,7 @@ PGM_P const state_4[] PROGMEM =
 					state4_string4
 				}; 
 
-const int STATE4_SIZE = (sizeof(state_4)/sizeof(state_4[0]));
+#define STATE4_SIZE (sizeof(state_4)/sizeof(state_4[0]))
 
 //  State 5
 PGM_P const state_5[] PROGMEM = 
@@ -113,7 +116,7 @@ PGM_P const state_5[] PROGMEM =
 					state5_string4
 				}; 
 
-const int STATE5_SIZE = (sizeof(state_5)/sizeof(state_5[0]));
+#define STATE5_SIZE (sizeof(state_5)/sizeof(state_5[0]))
 
 //  State 6
 PGM_P const state_6[] PROGMEM = 
@@ -124,7 +127,7 @@ PGM_P const state_6[] PROGMEM =
 					state6_string4
 				}; 
 
-const int STATE6_SIZE = (sizeof(state_6)/sizeof(state_6[0]));
+#define STATE6_SIZE (sizeof(state_6)/sizeof(state_6[0]))
 
 //  State 7
 PGM_P const state_7[] PROGMEM = 
@@ -133,7 +136,7 @@ PGM_P const state_7[] PROGMEM =
 					state7_string2
 				}; 
 
-const int STATE7_SIZE = (sizeof(state_7)/sizeof(state_7[0]));
+#define STATE7_SIZE (sizeof(state_7)/sizeof(state_7[0]))
 
 //  State 8
 PGM_P const state_8[] PROGMEM = 
@@ -144,7 +147,7 @@ PGM_P const state_8[] PROGMEM =
 					state8_string4
 				}; 
 
-const int STATE8_SIZE = (sizeof(state_8)/sizeof(state_8[0]));
+#define STATE8_SIZE (sizeof(state_8)/sizeof(state_8[0]))
 
 //  State 9
 PGM_P const state_9[] PROGMEM = 
@@ -155,7 +158,7 @@ PGM_P const state_9[] PROGMEM =
 					state9_string4
 				}; 
 
-const int STATE9_SIZE = (sizeof(state_9)/sizeof(state_9[0]));
+#define STATE9_SIZE (sizeof(state_9)/sizeof(state_9[0]))
 
 //  State 10
 PGM_P const state_10[] PROGMEM = 
@@ -166,12 +169,32 @@ PGM_P const state_10[] PROGMEM =
 					state10_string4
 				}; 
 
-const int STATE10_SIZE = (sizeof(state_10)/sizeof(state_10[0]));
+#define STATE10_SIZE (sizeof(state_10)/sizeof(state_10[0]))
+
+const int STATE_ARRAY_SIZES[] = {
+	STATE0_SIZE, STATE1_SIZE, STATE2_SIZE, STATE3_SIZE, STATE4_SIZE,
+	STATE5_SIZE, STATE6_SIZE, STATE7_SIZE, STATE8_SIZE, STATE9_SIZE,
+	STATE10_SIZE
+};
+#define STATES (sizeof(STATE_ARRAY_SIZES)/sizeof(STATE_ARRAY_SIZES[0]))									//number of states for LCD
+
+/**************** State Transition Table *****************/
+
+const int8_t *state_transition_table[] = {
+	&state0_transitions[0],
+	&state1_transitions[0],
+	&state2_transitions[0],
+	&state3_transitions[0],
+	&state4_transitions[0],
+	&state5_transitions[0],
+	&state6_transitions[0],
+	&state7_transitions[0],
+	&state8_transitions[0],
+	&state9_transitions[0],
+	&state10_transitions[0]
+};
 
 /***********************************************************/
-
-
-
 
 int main( void )
 {
@@ -194,12 +217,16 @@ int main( void )
 
 	/*********************************** DEFINITIONS *********************************/
 
-	CURRENT_STATE = 0;                  //initialize to 'Splash Screen' state 0
-	PREV_STATE = 1;						//initialize previous state value
-	ENCODER_VALUE = 0;          		//initialize encoder value to 0
+	CURRENT_STATE = 1;                  //initialize to 'Splash Screen' state 0
+	PREV_STATE = 0;						//initialize previous state value
+	CURRENT_ENCODER_VAL = 0;          		//initialize encoder value to 0
+	PREV_ENCODER_VAL = 0;
 	LCD_CHANGE_FLAG = 1;        		//initialize as ready to display to lcd
 	BUTTON_FLAG = 0;
+	uint8_t i;
 	lcd_clear();
+
+
 
 
 	while (1)  // Infinite loop
@@ -257,37 +284,88 @@ int main( void )
 		
 		if (LCD_CHANGE_FLAG)
 		{
-	
+
+			if (CURRENT_ENCODER_VAL != PREV_ENCODER_VAL)
+			{
+
+				//Bound checking
+				if(CURRENT_ENCODER_VAL >= STATE_ARRAY_SIZES[CURRENT_STATE])
+				{
+					CURRENT_ENCODER_VAL = STATE_ARRAY_SIZES[CURRENT_STATE] - 1;
+				}
+				else if(CURRENT_ENCODER_VAL < 0)
+				{
+					CURRENT_ENCODER_VAL = 0;
+				}
+
+				//Valid encoder value check
+				if(state_transition_table[CURRENT_STATE][CURRENT_ENCODER_VAL] == -1)
+				{
+					CURRENT_ENCODER_VAL = PREV_ENCODER_VAL;
+				}
+		
+			}
+
+			//state transition
+			if (BUTTON_FLAG)
+			{
+				BUTTON_FLAG = 0;
+				CURRENT_STATE = state_transition_table[CURRENT_STATE][CURRENT_ENCODER_VAL];
+				i = 0;
+				CURRENT_ENCODER_VAL = 0;
+				while(!state_transition_table[CURRENT_STATE][i])
+				{
+
+					i++;
+					CURRENT_ENCODER_VAL = i;
+
+				}
+			}
+			
 			switch(CURRENT_STATE) {
 
 				case 0:
-
+					lcd_clear();
 					if(CURRENT_STATE != PREV_STATE)
 					{
 						lcd_string_state_P(state_0, STATE0_SIZE, 0);
 					}
-					lcd_cursor(ENCODER_VALUE);
+					// lcd_cursor(CURRENT_ENCODER_VAL);
 
 					break;
 
 				case 1:
-					if(CURRENT_STATE != PREV_STATE)
+					
+
+					if( (CURRENT_STATE != PREV_STATE) || (CURRENT_ENCODER_VAL != PREV_ENCODER_VAL))
 					{
+						lcd_clear();
 						lcd_string_state_P(state_1, STATE1_SIZE, 0);
+						lcd_cursor(CURRENT_ENCODER_VAL);
 					}
-					lcd_cursor(ENCODER_VALUE);
+
 					break;
 
 				case 2:
 
-					lcd_string_state_P(state_2, STATE2_SIZE, 0);
+					if( (CURRENT_STATE != PREV_STATE) || (CURRENT_ENCODER_VAL != PREV_ENCODER_VAL))
+					{
+						lcd_clear();
+						lcd_string_state_P(state_2, STATE2_SIZE, 0);
+						lcd_cursor(CURRENT_ENCODER_VAL);
+					}
 
 					break;
 
 				case 3:
 
-					lcd_string_state_P(state_3, STATE3_SIZE, 0);
-
+					if( (CURRENT_STATE != PREV_STATE) || (CURRENT_ENCODER_VAL != PREV_ENCODER_VAL))
+					{	
+						lcd_clear();			
+						lcd_string_state_P(state_3, STATE3_SIZE, 0);
+						lcd_cursor(CURRENT_ENCODER_VAL);
+					}
+					
 					break;
 
 				case 4:
@@ -335,6 +413,7 @@ int main( void )
 
 			}
 			PREV_STATE = CURRENT_STATE;
+			PREV_ENCODER_VAL = CURRENT_ENCODER_VAL;
 			LCD_CHANGE_FLAG = 0;
 		}
 	}            

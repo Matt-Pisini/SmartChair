@@ -68,13 +68,13 @@ ISR (PCINT1_vect)
 		
 		if ( (value & 0xff) == 0x2b)			//This is always ending sequence for encoder bounce (CCW) 
 		{
-			ENCODER_VALUE--;					//decrement encoder
+			CURRENT_ENCODER_VAL--;					//decrement encoder
 			LCD_CHANGE_FLAG = 1;				//cursor display has changed
 		}
 		
 		if ( (value & 0xff) == 0x17)			//This is always ending sequence for encoder bounce (CW)
 		{
-			ENCODER_VALUE++;					//increment encoder
+			CURRENT_ENCODER_VAL++;					//increment encoder
 			LCD_CHANGE_FLAG = 1;				//cursor display has changed
 		}
 	}
@@ -94,6 +94,7 @@ ISR (TIMER2_OVF_vect)
 		if ( PINB & (1 << PB7) )		//checks if button pushed
 		{
 			BUTTON_FLAG = 1;			//turn on button flag
+			LCD_CHANGE_FLAG = 1;		//cursor display has changed
 		}
 
 		PCMSK0 |= (1 << PCINT7);		//re-enables interrupts on button input

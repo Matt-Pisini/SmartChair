@@ -1,7 +1,7 @@
 #ifndef BUTTON_ENCODER_MODULE
 
 /**************************** GLOBAL VARIABLES ***************************/
-volatile unsigned char ENCODER_VALUE;									//maintains current value of encoder
+volatile int8_t CURRENT_ENCODER_VAL;									//maintains current value of encoder
 volatile unsigned char BUTTON_FLAG;										//Button has been pressed
 volatile unsigned char button_timer_flag;								//Triggers debouncing timer from button interrupt
 volatile unsigned char LCD_CHANGE_FLAG;                					//flag to indicate some LCD aspect has changed
