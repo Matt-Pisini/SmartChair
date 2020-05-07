@@ -44,7 +44,6 @@ volatile unsigned char LCD_CHANGE_FLAG;                 //flag to only write to 
 
 //Global definitions
 volatile unsigned char CURRENT_STATE;                   //stores value for the state machine
-volatile unsigned char PREV_STATE;						//stores value of previous state
 
 
 
@@ -195,7 +194,6 @@ const int8_t *state_transition_table[] = {
 };
 
 /***********************************************************/
-
 int main( void )
 {
 	sei();                      //enable global interrupts
@@ -218,18 +216,26 @@ int main( void )
 	/*********************************** DEFINITIONS *********************************/
 
 	CURRENT_STATE = 1;                  //initialize to 'Splash Screen' state 0
-	PREV_STATE = 0;						//initialize previous state value
 	CURRENT_ENCODER_VAL = 0;          		//initialize encoder value to 0
 	PREV_ENCODER_VAL = 0;
 	LCD_CHANGE_FLAG = 1;        		//initialize as ready to display to lcd
 	BUTTON_FLAG = 0;
-	int8_t FIRST_CURSOR_INDEX = 0;		//initializes first value cursor can be for state 1
 	uint8_t DISPLAY_INDEX = 0;			//inidicates what lines of state will be displayed (i.e. if state has 4+ lines of string)
 	uint8_t CURSOR_VAL = 0;					//where the cursor is to be displayed (row 0 -4 on LCD)
+	int8_t VALID_MOVE = 0;
+	uint8_t MAX_SIZE = 0;
+	uint8_t CURRENT_INDEX = 0;
 	uint8_t i;
+	char buf[4];
+	
+
+
+	//Splash screen: displays for 3 seconds
 	lcd_clear();
-
-
+	lcd_string_state_P(state_0, STATE0_SIZE, 0);
+	lcd_writecommand(0x0c);
+	_delay_ms(3000);
+	lcd_writecommand(0x0f);
 
 
 	while (1)  // Infinite loop
@@ -288,78 +294,115 @@ int main( void )
 		if (LCD_CHANGE_FLAG)
 		{
 
-			if (CURRENT_ENCODER_VAL != PREV_ENCODER_VAL)
+/***************** ENCODER USED: cursor change *******************/
+			
+			//encoder increase
+			if (CURRENT_ENCODER_VAL > PREV_ENCODER_VAL)
 			{
 
-				//Encoder bound checking
-				if(CURRENT_ENCODER_VAL >= STATE_ARRAY_SIZES[CURRENT_STATE])
-				{
-					CURRENT_ENCODER_VAL = STATE_ARRAY_SIZES[CURRENT_STATE] - 1;
-				}
-				if(CURRENT_ENCODER_VAL < 0)
-				{
-					CURRENT_ENCODER_VAL = FIRST_CURSOR_INDEX;
-				}
+				MAX_SIZE = STATE_ARRAY_SIZES[CURRENT_STATE] - 1;
+				CURRENT_INDEX = CURSOR_VAL + DISPLAY_INDEX;
 
-				//set cursor value based on changed encoder values
-				if (CURRENT_ENCODER_VAL > PREV_ENCODER_VAL)
+				//cursor at upper boundary
+				if (CURRENT_INDEX == MAX_SIZE)
 				{
-
-					//upper bound --> need to display next line
-					if ((CURRENT_ENCODER_VAL > 3) && (CURSOR_VAL == 3))
-					{
-						CURSOR_VAL = 3;
-						DISPLAY_INDEX++;
-					}
-					else
-					{
-						CURSOR_VAL++;
-					}
-					
+					//cursor stays on MAX
 				}
-				else if(CURRENT_ENCODER_VAL < PREV_ENCODER_VAL)
+				//cursor at upper boundary && implicitly room to go
+				else if(CURSOR_VAL == 3)
 				{
+					VALID_MOVE = state_transition_table[CURRENT_STATE][CURRENT_INDEX + 1];
+					DISPLAY_INDEX++;
 
-					//lower bound --> need to display lower line
-					if ((CURSOR_VAL == 0) && (DISPLAY_INDEX > 0))
+					//invalid cursor display
+					if (VALID_MOVE == -1)
 					{
-						CURSOR_VAL = CURRENT_ENCODER_VAL;
-						DISPLAY_INDEX--;
+						CURSOR_VAL--;
 					}
+					//else: valid cursor display --> cursor stays on 3
+				}
+				//cursor in the middle
+				else
+				{
+					CURSOR_VAL++;
+				}
+			}
+			//encoder decrease
+			else if (CURRENT_ENCODER_VAL < PREV_ENCODER_VAL)
+			{
+				CURRENT_INDEX = CURSOR_VAL + DISPLAY_INDEX;
+				VALID_MOVE = state_transition_table[CURRENT_STATE][CURRENT_INDEX - 1];
+				
+				//cursor at lower boundary
+				if (CURSOR_VAL == 0)
+				{
+					//lower boundary: more screen to show
+					if (DISPLAY_INDEX)
+					{
+						
+						//valid cursor display
+						if (VALID_MOVE != -1)
+						{
+							DISPLAY_INDEX--;
+						}
+
+						//invalid cursor display
+						else
+						{
+							DISPLAY_INDEX--;
+							CURSOR_VAL++;
+						}
+						
+					}
+					//else: lower boundary & no more screen to show --> cursor values stays the same
+				}
+				//cursor in the middle
+				else
+				{
+					//middle cursor: invalid cursor display
+					if (VALID_MOVE == -1)
+					{
+						if (DISPLAY_INDEX)
+						{
+							DISPLAY_INDEX--;
+							CURSOR_VAL++;
+						}
+						//else: cursor value doesn't change
+					}
+					//middle cursor: valid cursor display
 					else
 					{
 						CURSOR_VAL--;
 					}
 					
-				}
-
-				//Valid encoder value check
-				if(state_transition_table[CURRENT_STATE][CURRENT_ENCODER_VAL] == -1)
-				{
-					CURRENT_ENCODER_VAL = PREV_ENCODER_VAL;
-				}
-		
+				}			
 			}
+			/*
+			else 
+			{
+				encoder hasnt changed
+			}
+			*/
+			
 
-			//state transition
+/***************** BUTTON USED: state transition *******************/
+
 			if (BUTTON_FLAG)
 			{
 				BUTTON_FLAG = 0;
-				CURRENT_STATE = state_transition_table[CURRENT_STATE][CURRENT_ENCODER_VAL];
+				CURRENT_STATE = state_transition_table[CURRENT_STATE][CURSOR_VAL + DISPLAY_INDEX];
 				
-				//Finds first valid postion the cursor can be at
+				//Finds first valid postion the cursor can be at in next state
 				i = 0;
-				FIRST_CURSOR_INDEX = 0;
+				CURSOR_VAL = 0;
 				while(state_transition_table[CURRENT_STATE][i] == -1)
 				{
 
 					i++;
-					FIRST_CURSOR_INDEX = i;
+					CURSOR_VAL = i;
 
 				}
-				CURRENT_ENCODER_VAL = FIRST_CURSOR_INDEX;
-				PREV_ENCODER_VAL = CURRENT_ENCODER_VAL;
-				CURSOR_VAL = FIRST_CURSOR_INDEX;
+				//resets display index
 				DISPLAY_INDEX = 0;
 			}
 
@@ -368,6 +411,10 @@ int main( void )
 			
 			switch(CURRENT_STATE) {
 
+				//for debugging
+				//lcd_moveto(3, 15);
+				//sprintf(buf, "%d", VALID_MOVE);
+				//lcd_stringout(buf);
 				case 0:
 					lcd_clear();
 					lcd_string_state_P(state_0, STATE0_SIZE, 0);
@@ -396,7 +443,7 @@ int main( void )
 					lcd_clear();			
 					lcd_string_state_P(state_3, STATE3_SIZE, DISPLAY_INDEX);
 					lcd_cursor(CURSOR_VAL);
-										
+		
 					break;
 
 				case 4:
@@ -457,8 +504,9 @@ int main( void )
 
 
 			}
-			PREV_STATE = CURRENT_STATE;
-			PREV_ENCODER_VAL = CURRENT_ENCODER_VAL;
+			//ensure no overflow of encoder values
+			PREV_ENCODER_VAL = 0;
+			CURRENT_ENCODER_VAL = 0;
 			LCD_CHANGE_FLAG = 0;
 		}
 	}            
