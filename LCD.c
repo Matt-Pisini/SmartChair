@@ -67,15 +67,22 @@ void lcd_string_state_P(const char * const s[], int size, int index)
       iterator = 0;
       top_value = size;
     }
-    else if ( (size - index) < 4)
-    {
-      iterator = size - 4;
-      top_value = size - 1;
-    }
     else
     {
+
       iterator = index;
-      top_value = index + 4;
+      top_value = iterator + 4;
+      // if(index >= 4)
+      // {
+      //   iterator = index % 3;
+      //   top_value = iterator + 4;
+      // }
+      // else
+      // {
+      //   iterator = 0;
+      //   top_value = 4;
+      // }
+
     }
 
     for (; iterator < top_value; iterator++)

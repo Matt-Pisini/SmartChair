@@ -223,6 +223,9 @@ int main( void )
 	PREV_ENCODER_VAL = 0;
 	LCD_CHANGE_FLAG = 1;        		//initialize as ready to display to lcd
 	BUTTON_FLAG = 0;
+	int8_t FIRST_CURSOR_INDEX = 0;		//initializes first value cursor can be for state 1
+	uint8_t DISPLAY_INDEX = 0;			//inidicates what lines of state will be displayed (i.e. if state has 4+ lines of string)
+	uint8_t CURSOR_VAL = 0;					//where the cursor is to be displayed (row 0 -4 on LCD)
 	uint8_t i;
 	lcd_clear();
 
@@ -288,14 +291,46 @@ int main( void )
 			if (CURRENT_ENCODER_VAL != PREV_ENCODER_VAL)
 			{
 
-				//Bound checking
+				//Encoder bound checking
 				if(CURRENT_ENCODER_VAL >= STATE_ARRAY_SIZES[CURRENT_STATE])
 				{
 					CURRENT_ENCODER_VAL = STATE_ARRAY_SIZES[CURRENT_STATE] - 1;
 				}
-				else if(CURRENT_ENCODER_VAL < 0)
+				if(CURRENT_ENCODER_VAL < 0)
 				{
-					CURRENT_ENCODER_VAL = 0;
+					CURRENT_ENCODER_VAL = FIRST_CURSOR_INDEX;
+				}
+
+				//set cursor value based on changed encoder values
+				if (CURRENT_ENCODER_VAL > PREV_ENCODER_VAL)
+				{
+
+					//upper bound --> need to display next line
+					if ((CURRENT_ENCODER_VAL > 3) && (CURSOR_VAL == 3))
+					{
+						CURSOR_VAL = 3;
+						DISPLAY_INDEX++;
+					}
+					else
+					{
+						CURSOR_VAL++;
+					}
+					
+				}
+				else if(CURRENT_ENCODER_VAL < PREV_ENCODER_VAL)
+				{
+
+					//lower bound --> need to display lower line
+					if ((CURSOR_VAL == 0) && (DISPLAY_INDEX > 0))
+					{
+						CURSOR_VAL = CURRENT_ENCODER_VAL;
+						DISPLAY_INDEX--;
+					}
+					else
+					{
+						CURSOR_VAL--;
+					}
+					
 				}
 
 				//Valid encoder value check
@@ -311,102 +346,112 @@ int main( void )
 			{
 				BUTTON_FLAG = 0;
 				CURRENT_STATE = state_transition_table[CURRENT_STATE][CURRENT_ENCODER_VAL];
+				
+				//Finds first valid postion the cursor can be at
 				i = 0;
-				CURRENT_ENCODER_VAL = 0;
-				while(!state_transition_table[CURRENT_STATE][i])
+				FIRST_CURSOR_INDEX = 0;
+				while(state_transition_table[CURRENT_STATE][i] == -1)
 				{
 
 					i++;
-					CURRENT_ENCODER_VAL = i;
+					FIRST_CURSOR_INDEX = i;
 
 				}
+				CURRENT_ENCODER_VAL = FIRST_CURSOR_INDEX;
+				PREV_ENCODER_VAL = CURRENT_ENCODER_VAL;
+				CURSOR_VAL = FIRST_CURSOR_INDEX;
+				DISPLAY_INDEX = 0;
 			}
+
+
+
 			
 			switch(CURRENT_STATE) {
 
 				case 0:
 					lcd_clear();
-					if(CURRENT_STATE != PREV_STATE)
-					{
-						lcd_string_state_P(state_0, STATE0_SIZE, 0);
-					}
+					lcd_string_state_P(state_0, STATE0_SIZE, 0);
 					// lcd_cursor(CURRENT_ENCODER_VAL);
 
 					break;
 
 				case 1:
-					
 
-					if( (CURRENT_STATE != PREV_STATE) || (CURRENT_ENCODER_VAL != PREV_ENCODER_VAL))
-					{
-						lcd_clear();
-						lcd_string_state_P(state_1, STATE1_SIZE, 0);
-						lcd_cursor(CURRENT_ENCODER_VAL);
-					}
+					lcd_clear();
+					lcd_string_state_P(state_1, STATE1_SIZE, DISPLAY_INDEX);
+					lcd_cursor(CURSOR_VAL);
 
 					break;
 
 				case 2:
 
-					if( (CURRENT_STATE != PREV_STATE) || (CURRENT_ENCODER_VAL != PREV_ENCODER_VAL))
-					{
-						lcd_clear();
-						lcd_string_state_P(state_2, STATE2_SIZE, 0);
-						lcd_cursor(CURRENT_ENCODER_VAL);
-					}
+					lcd_clear();
+					lcd_string_state_P(state_2, STATE2_SIZE, DISPLAY_INDEX);
+					lcd_cursor(CURSOR_VAL);
 
 					break;
 
 				case 3:
-
-					if( (CURRENT_STATE != PREV_STATE) || (CURRENT_ENCODER_VAL != PREV_ENCODER_VAL))
-					{	
-						lcd_clear();			
-						lcd_string_state_P(state_3, STATE3_SIZE, 0);
-						lcd_cursor(CURRENT_ENCODER_VAL);
-					}
-					
+	
+					lcd_clear();			
+					lcd_string_state_P(state_3, STATE3_SIZE, DISPLAY_INDEX);
+					lcd_cursor(CURSOR_VAL);
+										
 					break;
 
 				case 4:
 
-					lcd_string_state_P(state_4, STATE4_SIZE, 0);
+					lcd_clear();
+					lcd_string_state_P(state_4, STATE4_SIZE, DISPLAY_INDEX);
+					lcd_cursor(CURSOR_VAL);
 
 					break;
 
 				case 5:
-
-					lcd_string_state_P(state_5, STATE5_SIZE, 0);
+	
+					lcd_clear();
+					lcd_string_state_P(state_5, STATE5_SIZE, DISPLAY_INDEX);
+					lcd_cursor(CURSOR_VAL);
 
 					break;
 
 				case 6:
 
-					lcd_string_state_P(state_6, STATE6_SIZE, 0);
+					lcd_clear();
+					lcd_string_state_P(state_6, STATE6_SIZE, DISPLAY_INDEX);
+					lcd_cursor(CURSOR_VAL);
 
 					break;
 
 				case 7:
 
-					lcd_string_state_P(state_7, STATE7_SIZE, 0);
+					lcd_clear();
+					lcd_string_state_P(state_7, STATE7_SIZE, DISPLAY_INDEX);
+					lcd_cursor(CURSOR_VAL);
 
 					break;
 
 				case 8:
 
-					lcd_string_state_P(state_8, STATE8_SIZE, 0);
+					lcd_clear();
+					lcd_string_state_P(state_8, STATE8_SIZE, DISPLAY_INDEX);
+					lcd_cursor(CURSOR_VAL);
 
 					break;
 
 				case 9:
 
-					lcd_string_state_P(state_9, STATE9_SIZE, 0);
+					lcd_clear();
+					lcd_string_state_P(state_9, STATE9_SIZE, DISPLAY_INDEX);
+					lcd_cursor(CURSOR_VAL);
 
 					break;
 
 				case 10:
 
-					lcd_string_state_P(state_10, STATE10_SIZE, 0);
+					lcd_clear();
+					lcd_string_state_P(state_10, STATE10_SIZE, DISPLAY_INDEX);
+					lcd_cursor(CURSOR_VAL);
 
 					break;
 
