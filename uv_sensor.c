@@ -46,7 +46,7 @@ uint8_t i2c_io(uint8_t device_addr, uint8_t *ap, uint16_t an, uint8_t *rp, uint1
         if (status != 0x08)                 // Check that START was sent OK
             return(status);
         
-        TWDR = device_addr | 0x01;          // Load device address and R/W = 0;
+        TWDR = device_addr & 0xfe;          // Load device address and R/W = 0;
         TWCR = (1 << TWINT) | (1 << TWEN);  // Start transmission
         while (!(TWCR & (1 << TWINT)));     // Wait for TWINT to be set
         status = TWSR & 0xf8;
@@ -153,14 +153,17 @@ int get_UVI(void)
     uint8_t *uv_comp1_ptr = &uvcomp1_address;
     uint8_t uvcomp2_address = UVCOMP2_REG;
     uint8_t *uv_comp2_ptr = &uvcomp2_address;
-    int uva_value = find_uv_value(uva_ptr);
-    int uvb_value = find_uv_value(uvb_ptr);
-    int uv_comp1 = find_uv_value(uv_comp1_ptr);
-    int uv_comp2 = find_uv_value(uv_comp2_ptr);
-    int uva_calc = uva_value - (uva_a_coeff*uv_comp1) - (uva_b_coeff*uv_comp2);
-    int uvb_calc = uvb_value - (uvb_c_coeff*uv_comp1) - (uvb_d_coeff*uv_comp2);
-    int uvia = uva_calc * uva_resp;
-    int uvib = uvb_calc * uvb_resp;
-    int uvi = (uvia + uvib) / 2;
+    float uva_value = find_uv_value(uva_ptr);
+    float uvb_value = find_uv_value(uvb_ptr);
+    float uv_comp1 = find_uv_value(uv_comp1_ptr);
+    float uv_comp2 = find_uv_value(uv_comp2_ptr);
+    float uva_calc = uva_value - (uva_a_coeff*uv_comp1) - (uva_b_coeff*uv_comp2);
+    float uvb_calc = uvb_value - (uvb_c_coeff*uv_comp1) - (uvb_d_coeff*uv_comp2);
+    float uvia = uva_calc * uva_resp;
+    float uvib = uvb_calc * uvb_resp;
+    float uvi = (uvia + uvib) / 2;
+    uvi = round(40*uvi);
+    uvi = (int)uvi;
     return uvi;
+}
 }
