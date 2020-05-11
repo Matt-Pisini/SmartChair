@@ -167,4 +167,4 @@ int get_UVI(void)
     uvi = (int)uvi;
     return uvi;
 }
-}
+
