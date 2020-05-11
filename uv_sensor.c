@@ -46,7 +46,7 @@ uint8_t i2c_io(uint8_t device_addr, uint8_t *ap, uint16_t an, uint8_t *rp, uint1
         if (status != 0x08)                 // Check that START was sent OK
             return(status);
         
-        TWDR = device_addr & 0xfe;          // Load device address and R/W = 0;
+        TWDR = device_addr | 0x01;          // Load device address and R/W = 0;
         TWCR = (1 << TWINT) | (1 << TWEN);  // Start transmission
         while (!(TWCR & (1 << TWINT)));     // Wait for TWINT to be set
         status = TWSR & 0xf8;
