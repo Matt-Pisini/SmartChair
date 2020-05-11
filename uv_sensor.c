@@ -126,9 +126,10 @@ nakstop:                                    // Come here to send STOP after a NA
     return(status);
 }
 
-int find_uv_value(uint8_t *uv_address)
+float find_uv_value(uint8_t *uv_address)
 {
-    int decimal_val = 0, base = 1, rem;
+    float decimal_val = 0;
+    int base = 1, rem;
     uint8_t rbuf[2];
     uint8_t check_status = i2c_io(VEML6075_ADDR, uv_address, 2, rbuf, 2);
     if (check_status == 0) {
