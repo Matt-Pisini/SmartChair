@@ -3,7 +3,7 @@
 
 #define CLK 7372800				// clock rate
 #define BDIV (CLK / 100000 - 16) / 2 + 	1	// TWBR value, prescaler 1
-#define VEML6075_ADDR 0x10      // I2C slave address
+#define VEML6075_ADDR 0x20      // I2C slave address; 7bit address (0x10) left shifted with 0 in LSB
 #define UVA_REG 0x07
 #define UVB_REG 0x09
 #define UVCOMP1_REG 0x0A
