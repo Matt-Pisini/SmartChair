@@ -61,30 +61,20 @@ void lcd_string_state_P(const char * const s[], int size, int index)
     int top_value;
     int lcd_row = 1;
 
-    //Decides which element to start on and what value to print to
+    //Display state has 4 or less rows of text
     if (size <= 4)
     {
       iterator = 0;
       top_value = size;
     }
+    //Display screen has more than 4 rows of text
     else
     {
-
       iterator = index;
       top_value = iterator + 4;
-      // if(index >= 4)
-      // {
-      //   iterator = index % 3;
-      //   top_value = iterator + 4;
-      // }
-      // else
-      // {
-      //   iterator = 0;
-      //   top_value = 4;
-      // }
-
     }
 
+    //Display next 4 lines of text on the LCD
     for (; iterator < top_value; iterator++)
     {
         strcpy_P(buffer, (PGM_P)pgm_read_word(&(s[iterator])));

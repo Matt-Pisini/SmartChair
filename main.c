@@ -21,6 +21,8 @@ Purpose:		Code controlling all SmartChair functionality
 #include "ADC.h"
 #include "lcd_strings.h"
 #include "button_encoder.h"
+#include "speech_module.h"
+#include "uv_sensor.h"
 
 /******************************************************* DEFINITIONS ******************************************************/
 
@@ -207,7 +209,9 @@ int main( void )
 	adc_timer_init();           //Initialize the ADC timer
 	button_init();              //intitialize button as interrupt on PB7
 	encoder_init();             //Initialize rotary encoder on PC0 & PC1
-   
+	i2c_init();					//Initialization of I2C
+   	serial_init(UBBR);			//Initialization of asyn. serial for speech module
+
 	/*********************************** DECLARATIONS *********************************/
 
 	char buffer_left[4], buffer_right[4];   //buffer used to convert adc_val to string for LCD print
@@ -225,54 +229,19 @@ int main( void )
 	int8_t VALID_MOVE = 0;
 	uint8_t MAX_SIZE = 0;
 	uint8_t CURRENT_INDEX = 0;
-	uint8_t i;
-	char buf[4];
-	
+	uint8_t i;	
 
 
 	//Splash screen: displays for 3 seconds
 	lcd_clear();
 	lcd_string_state_P(state_0, STATE0_SIZE, 0);
-	lcd_writecommand(0x0c);
-	_delay_ms(3000);
-	lcd_writecommand(0x0f);
+	lcd_writecommand(0x0c);						//turn cursor off
+	_delay_ms(3000);							
+	lcd_writecommand(0x0f);						//turn cursor on
 
 
 	while (1)  // Infinite loop
 	{
-
-/******************************** ROTARY ENCODER + BUTTON TEST **********************************/
-		
-		/*
-		if (prev_button_flag != BUTTON_FLAG)
-		{
-			sprintf(buf, "%u", BUTTON_FLAG);        //convert byte into string of int value
-			lcd_clear();
-			lcd_moveto(0,0);
-			lcd_stringout(buf);
-			prev_button_flag = BUTTON_FLAG;
-		}
-		*/
-
-		// if (prev_button_flag != BUTTON_FLAG)
-		// {
-		//     while ( BUTTON_FLAG )
-		//     {
-		//         lcd_clear();
-		//         lcd_stringout("Button!");
-		//         prev_button_flag = BUTTON_FLAG;
-
-		//     }
-		
-		//     lcd_clear();
-		//     lcd_stringout("No Button");
-		//     BUTTON_FLAG = 0; 
-		//     prev_button_flag = BUTTON_FLAG;
-		// }
-		
-
-
-
 
 /******************************** ADC UPDATE & DISPLAY + PWM **********************************/
 
