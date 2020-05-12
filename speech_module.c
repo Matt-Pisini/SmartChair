@@ -1,6 +1,4 @@
 #include <avr/io.h>
-#include <util/delay.h>
-#include "speech_module.h"
 
 void serial_init(unsigned short MYUBRR) {
     UBRR0 = MYUBRR;          // Set baud rate

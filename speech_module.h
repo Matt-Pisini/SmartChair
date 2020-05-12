@@ -1,7 +1,5 @@
 #ifndef Speech_module_h
 
-
-
 const char str1[] = "Welcome";
 const char str2[] = "Main Menu";
 const char str3[] = "UV Rating";
@@ -13,7 +11,7 @@ const char str8[] = "Please Flip";
 const char str9[] = "Tanning Done";
 const char str10[] = "Apply Sunscreen";
 const char str11[] = "Thank you for using smart chair";
-const char star12[] = "Something Wrong";
+const char str12[] = "Something Wrong";
 
 
 void serial_init(unsigned short MYUBRR);
