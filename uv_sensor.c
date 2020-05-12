@@ -1,15 +1,17 @@
 #include <avr/io.h>
 #include "uv_sensor.h"
+#include <math.h>
+#include <string.h>
 
-#define CLK 7372800				// clock rate
+#define CLK 7372800				            // clock rate
 #define BDIV (CLK / 100000 - 16) / 2 + 	1	// TWBR value, prescaler 1
-#define VEML6075_ADDR 0x20      // I2C slave address; 7bit address (0x10) left shifted with 0 in LSB
-#define UVA_REG 0x07
-#define UVB_REG 0x09
-#define UVCOMP1_REG 0x0A
-#define UVCOMP2_REG 0x0B
+#define VEML6075_ADDR 0x20                  // I2C slave address; 7bit address 0x10
+#define UVA_REG 0x07        // UVA internal address, command code 7
+#define UVB_REG 0x09        // UVB internal address, command code 9
+#define UVCOMP1_REG 0x0A    // UV_COMP1 internal address, command code 10
+#define UVCOMP2_REG 0x0B    // UV_COMP2 internal address, command code 11
 
-#define uva_a_coeff 2.22
+#define uva_a_coeff 2.22    // UV coefficients are defined in VEML_6075 application sheet
 #define uva_b_coeff 1.33
 #define uvb_c_coeff 2.95
 #define uvb_d_coeff 1.74
@@ -22,12 +24,15 @@ uint16_t uvb_data;
 uint16_t uvcomp1_data;
 uint16_t uvcomp2_data;
 
+// I2C initialization code referenced by Professor Weber
 void i2c_init(void)
 {
     TWSR = 0; //prescaler is 1
     TWBR = BDIV;
 }
 
+// I2C communication code referenced by Professor Weber
+// Edited to remove *wp and wn, as we are not writing anything other than the addresses to the VEML_6075
 uint8_t i2c_io(uint8_t device_addr, uint8_t *ap, uint16_t an, uint8_t *rp, uint16_t rn)
 {
     uint8_t status, send_stop, wrote, start_stat;
@@ -126,27 +131,34 @@ nakstop:                                    // Come here to send STOP after a NA
     return(status);
 }
 
+/* Function to communicate with VEML_6075 and read UVA, UVB, UVCOMP1, and UVCOMP2 values
+ Input argument: ptr to internal address data; output: float UV value in decimal
+ */
 float find_uv_value(uint8_t *uv_address)
 {
-    float decimal_val = 0;
-    int base = 1, rem;
-    uint8_t rbuf[2];
+    int decimal_val = 0, base = 1, div;     // Variables to convert binary to decimal
+    uint8_t rbuf[2];                        // Buffer to store 2 bytes of data
     uint8_t check_status = i2c_io(VEML6075_ADDR, uv_address, 2, rbuf, 2);
-    if (check_status == 0) {
-        while (*uv_address > 0)
-        {
-            rem = *uv_address % 10;
-            decimal_val = decimal_val + rem * base;
-            *uv_address = *uv_address / 10 ;
-            base = base * 2;
+    if (check_status == 0) {                // If status is OK
+        for (int i=0; i<2; i++) {           // Convert bytes to decimal, starting with LSB then MSB
+            while (rbuf[i] > 0)             // See bibliography for bin->dec reference code
+            {
+                div = rbuf[i] % 10;
+                decimal_val = decimal_val + div * base;
+                rbuf[i] = rbuf[i] / 10 ;
+                base = base * 2;
+            }
         }
     }
     return decimal_val;
 }
 
+/* Function to obtain UV index (from 0 to 11+)
+ This is displayed on the LCD in State 2
+ */
 int get_UVI(void)
 {
-    uint8_t uva_address = UVA_REG;
+    uint8_t uva_address = UVA_REG;              // Initialize ptrs to internal addresses
     uint8_t *uva_ptr = &uva_address;
     uint8_t uvb_address = UVB_REG;
     uint8_t *uvb_ptr = &uvb_address;
@@ -154,17 +166,68 @@ int get_UVI(void)
     uint8_t *uv_comp1_ptr = &uvcomp1_address;
     uint8_t uvcomp2_address = UVCOMP2_REG;
     uint8_t *uv_comp2_ptr = &uvcomp2_address;
-    float uva_value = find_uv_value(uva_ptr);
+    float uva_value = find_uv_value(uva_ptr);   // Find float UVA, UVB, UVCOMP1, UVCOMP2 values
     float uvb_value = find_uv_value(uvb_ptr);
     float uv_comp1 = find_uv_value(uv_comp1_ptr);
     float uv_comp2 = find_uv_value(uv_comp2_ptr);
-    float uva_calc = uva_value - (uva_a_coeff*uv_comp1) - (uva_b_coeff*uv_comp2);
-    float uvb_calc = uvb_value - (uvb_c_coeff*uv_comp1) - (uvb_d_coeff*uv_comp2);
+    float uva_calc = uva_value - (uva_a_coeff*uv_comp1) - (uva_b_coeff*uv_comp2);   // Calculate UVA_calc, UVB_calc, UVIA, and UVIB
+    float uvb_calc = uvb_value - (uvb_c_coeff*uv_comp1) - (uvb_d_coeff*uv_comp2);   // Formulas provided in VEML_6075 application sheet
     float uvia = uva_calc * uva_resp;
     float uvib = uvb_calc * uvb_resp;
-    float uvi = (uvia + uvib) / 2;
-    uvi = round(40*uvi);
+    float uvi = (uvia + uvib) / 2;              // Calculate UV irradiance value
+    uvi = round(40*uvi);                        // Multiply by 40 to obtain corresponding UV index
     uvi = (int)uvi;
     return uvi;
 }
 
+/* Function to obtain recommended tanning timer based on input arguments UV index and user's skin type
+ This is displayed on the LCD in State 4
+ */
+int getTanningTime(int UVI, char *skinType)
+{
+    char fair_skin[] = "Fair";              // Create char arrays to match skin type options
+    char med_skin[] = "Medium";
+    char dark_skin[] = "Dark";
+    int tanningTime = 0;                    // Initialize tanningTime variable
+    if (0 < UVI < 2) {                      // If UV index is at low exposure level
+        if (strncmp(skinType, fair_skin, 4) == 0)
+            tanningTime = 40;
+        else if (strncmp(skinType, med_skin, 6) == 0)
+            tanningTime = 50;
+        else if (strncmp(skinType, dark_skin, 4) == 0)
+            tanningTime = 60;
+    }
+    else if (3 < UVI < 5) {                 // If UV index is at moderate exposure level
+        if (strncmp(skinType, fair_skin, 4) == 0)
+            tanningTime = 20;
+        else if (strncmp(skinType, med_skin, 6) == 0)
+            tanningTime = 30;
+        else if (strncmp(skinType, dark_skin, 4) == 0)
+            tanningTime = 45;
+    }
+    else if (6 < UVI < 7) {                 // If UV index is at high exposure level
+        if (strncmp(skinType, fair_skin, 4) == 0)
+            tanningTime = 10;
+        else if (strncmp(skinType, med_skin, 6) == 0)
+            tanningTime = 15;
+        else if (strncmp(skinType, dark_skin, 4) == 0)
+            tanningTime = 25;
+    }
+    else if (8 < UVI < 10) {                // If UV index is at very high exposure level
+        if (strncmp(skinType, fair_skin, 4) == 0)
+            tanningTime = 6;
+        else if (strncmp(skinType, med_skin, 6) == 0)
+            tanningTime = 10;
+        else if (strncmp(skinType, dark_skin, 4) == 0)
+            tanningTime = 15;
+    }
+    else if (11 < UVI < 15) {               // If UV index is at extreme exposure level
+        if (strncmp(skinType, fair_skin, 4) == 0)
+            tanningTime = 3;
+        else if (strncmp(skinType, med_skin, 6) == 0)
+            tanningTime = 6;
+        else if (strncmp(skinType, dark_skin, 4) == 0)
+            tanningTime = 10;
+    }
+    return tanningTime;
+}
