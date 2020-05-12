@@ -3,7 +3,6 @@
 #include "speech_module.h"
 
 void serial_init(unsigned short MYUBRR) {
-    _delay_ms(300);        // Delay 3s for Emic 2 to initialize
     UBRR0 = MYUBRR;          // Set baud rate
     UCSR0B |= (1 << TXEN0);  // Turn on transmitter
     UCSR0C = (3 << UCSZ00);  // Set for asynchronous operation, no parity,
